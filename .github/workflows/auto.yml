@@ -1,6 +1,20 @@
 name: Auto Upload Daily
 on:
   workflow_dispatch:
+    inputs:
+      product:
+        description: 'Product name (empty=random)'
+        required: false
+        type: string
+      privacy:
+        description: 'Privacy'
+        required: false
+        default: 'unlisted'
+        type: choice
+        options:
+          - unlisted
+          - public
+          - private
   schedule:
     - cron: '0 6 * * *'
 jobs:
@@ -8,4 +22,62 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Workflow is alive!"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          pip install -q google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client gtts pillow moviepy requests
+      - name: Setup YouTube
+        run: |
+          echo "${{ secrets.CLIENT_SECRET_JSON }}" | base64 --decode > client_secret.json 2>/dev/null || echo "No CLIENT_SECRET_JSON"
+          echo "${{ secrets.TOKEN_PICKLE }}" | base64 --decode > token.pickle 2>/dev/null || echo "No TOKEN_PICKLE"
+      - name: Generate & Upload
+        run: |
+          PRODUCT="${{ github.event.inputs.product }}"
+          python youtube_content_automation.py generate "${PRODUCT:-Provadent}"
+          python -c "
+import sys, json, os
+sys.path.insert(0, '.')
+from pathlib import Path
+from youtube_content_automation import create_video_from_package
+latest = sorted(Path('output/scripts').iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)[0]
+meta = json.loads((latest / 'package.json').read_text())
+script = (latest / 'script.txt').read_text()
+desc = (latest / 'description.txt').read_text()
+pkg = {'title': meta['title'], 'product': meta['product'], 'description': desc, 'script': script, 'tags': ['health', meta['product'].replace(' ', '')], 'affiliate_url': meta.get('affiliate_url',''), 'niche': meta.get('niche','general')}
+vp = create_video_from_package(pkg, meta['product'][:20])
+if vp: print(f'VIDEO={vp}')
+" 2>&1
+          ls output/videos/ 2>/dev/null || echo "No video created"
+      - name: Upload YouTube
+        if: hashFiles('client_secret.json') != ''
+        run: |
+          python -c "
+import sys, os
+sys.path.insert(0, '.')
+from pathlib import Path
+vids = list(Path('output/videos').glob('*.mp4'))
+if not vids: print('[X] No video'); exit(0)
+vp = str(sorted(vids, key=lambda p: p.stat().st_mtime, reverse=True)[0])
+scripts = sorted(Path('output/scripts').iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+if scripts:
+    import json
+    m = json.loads((scripts[0] / 'package.json').read_text())
+    title, desc = m['title'], (scripts[0] / 'description.txt').read_text()
+    tags = ['health', m['product'].replace(' ','')]
+else:
+    title, desc, tags = os.path.basename(vp), 'Auto', ['health']
+from youtube_upload import upload_video
+url = upload_video(vp, title, desc, tags, '${{ github.event.inputs.privacy || 'unlisted' }}')
+print(f'[OK] {url}')
+" 2>&1
+        shell: python
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: output-${{ github.run_id }}
+          path: output/
+          retention-days: 3
