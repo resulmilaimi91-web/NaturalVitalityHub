@@ -127,17 +127,12 @@ def create_product_card(product_name, niche="general-health", size=(1920, 1080),
         dx = size[0] // 2 - 120 + j * 60
         draw.ellipse([dx, dots_y, dx + 20, dots_y + 20], fill=color)
 
-    buy_text = "👇 CLICK LINK IN DESCRIPTION TO BUY 👇"
-    bbox = draw.textbbox((0, 0), buy_text, font_size=40)
-    btx = (size[0] - (bbox[2] - bbox[0])) // 2
-    draw.text((btx + 2, dots_y + 60 + 2), buy_text, fill=(0, 0, 0, 200), font_size=40)
-    draw.text((btx, dots_y + 60), buy_text, fill=color, font_size=40)
-
     if affiliate_url:
-        short_url = affiliate_url[:50] + "..." if len(affiliate_url) > 50 else affiliate_url
-        bbox = draw.textbbox((0, 0), short_url, font_size=28)
+        short_url = affiliate_url[:55] + "..." if len(affiliate_url) > 55 else affiliate_url
+        bbox = draw.textbbox((0, 0), short_url, font_size=32)
         ux = (size[0] - (bbox[2] - bbox[0])) // 2
-        draw.text((ux, dots_y + 120), short_url, fill="#AAAAAA", font_size=28)
+        draw.text((ux + 2, dots_y + 60 + 2), short_url, fill=(0, 0, 0, 200), font_size=32)
+        draw.text((ux, dots_y + 60), short_url, fill=color, font_size=32)
 
     path = os.path.join(tempfile.gettempdir(), f"product_card_{random.randint(0,999999)}.png")
     bg.save(path)
@@ -155,7 +150,7 @@ def wrap_text(text, max_chars=22):
     if current: lines.append(current)
     return lines
 
-def create_slide(text, theme=None, duration=5, size=(1920, 1080), product_card_path=None):
+def create_slide(text, theme=None, duration=5, size=(1920, 1080), product_card_path=None, affiliate_url=""):
     if theme is None:
         theme = random.choice(THEMES)
     img = load_bg_image(size)
@@ -188,11 +183,11 @@ def create_slide(text, theme=None, duration=5, size=(1920, 1080), product_card_p
         except:
             pass
 
-    link_text = "👇 BUY NOW - Link in Description"
-    bbox = draw.textbbox((0, 0), link_text, font_size=30)
-    lx = (size[0] - (bbox[2] - bbox[0])) // 2
-    ly = size[1] - 60
-    draw.text((lx, ly), link_text, fill=theme["text"], font_size=30)
+    if affiliate_url:
+        short_url = affiliate_url[:55] + "..." if len(affiliate_url) > 55 else affiliate_url
+        bbox = draw.textbbox((0, 0), short_url, font_size=24)
+        lx = (size[0] - (bbox[2] - bbox[0])) // 2
+        draw.text((lx, size[1] - 50), short_url, fill=theme["text"], font_size=24)
 
     slide_path = os.path.join(tempfile.gettempdir(), f"slide_{random.randint(0,999999)}.png")
     img.save(slide_path)
@@ -229,7 +224,7 @@ def create_video_from_script(title="Video Title", script_sections=None, desc="",
 
     for i, section in enumerate(script_sections):
         theme = THEMES[i % len(THEMES)]
-        slide_path = create_slide(section["text"], theme=theme, duration=sec_per_section, product_card_path=product_card_path)
+        slide_path = create_slide(section["text"], theme=theme, duration=sec_per_section, product_card_path=product_card_path, affiliate_url=affiliate_url)
         clip = ImageClip(slide_path, duration=sec_per_section)
         clips.append(clip)
 

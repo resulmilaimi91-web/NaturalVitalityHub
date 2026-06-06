@@ -88,15 +88,7 @@ def generate_youtube_package(product):
     
     title = content["title_template"].replace("{product}", name)
     script = "\n\n".join(content["sections"])
-    description = f"""{name} Review 2026 - Does It Really Work? Honest Results
-
-👇 OFFICIAL WEBSITE ➡ {url}
-
-In this video, we take an honest look at {name}.
-
-⚠️ Important: Only buy from the official website to avoid counterfeit products.
-
-#HealthSupplements #{name.replace(' ', '')} #NaturalHealth #Wellness2026 #SupplementReview"""
+    description = url
     
     tags = [
         name, f"{name} Review", f"{name} 2026",
@@ -452,7 +444,7 @@ def upload_video_to_youtube(video_path, pkg, privacy="public"):
         )
         print(f"  [OK] Uploaded: {url}")
         vid = url.split("/")[-1]
-        msg = f"👇 GET {pkg['product'].upper()} HERE:\n{pkg.get('affiliate_url', '')}\n\n✅ Official Website - Best Price"
+        msg = pkg.get("affiliate_url", "")
         post_pin_comment(vid, msg)
         return url
     except Exception as e:
