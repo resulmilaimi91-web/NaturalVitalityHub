@@ -12,6 +12,10 @@ env/
 output/videos/
 output/scripts/
 
+# Downloaded background images (not the folder itself)
+images/bg_*.jpg
+images/bg_*.png
+
 # Environment & secrets
 .env
 *.env

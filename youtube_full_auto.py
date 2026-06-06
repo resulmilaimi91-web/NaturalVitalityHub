@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json, os, sys, tempfile, random, glob
+from pathlib import Path
 from gtts import gTTS
 from moviepy import *
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
