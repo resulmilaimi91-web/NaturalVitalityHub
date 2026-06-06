@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}{% if edit %}Edit Product{% else %}New Product{% endif %} - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">{% if edit %}Edit Product{% else %}Create New Product{% endif %}</h1>
+        <form id="productForm" class="space-y-6" enctype="multipart/form-data">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                    <input type="text" id="title" class="input-field" placeholder="My Awesome Plugin" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                    <select id="category" class="input-field" required>
+                        <option value="plugin">Plugin</option>
+                        <option value="theme">Theme</option>
+                        <option value="template">Template</option>
+                        <option value="code">Code & Script</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                <input type="text" id="short_description" class="input-field" placeholder="Brief description for product cards">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
+                <textarea id="description" rows="5" class="input-field" placeholder="Describe your product in detail..."></textarea>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Price (EUR) *</label>
+                    <input type="number" id="price" step="0.01" min="0" class="input-field" placeholder="29.99" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sale Price</label>
+                    <input type="number" id="sale_price" step="0.01" min="0" class="input-field" placeholder="19.99">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                    <input type="text" id="version" class="input-field" value="1.0.0">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
+                <input type="text" id="tags" class="input-field" placeholder="wordpress, plugin, seo, analytics">
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Product File (ZIP)</label>
+                    <input type="file" id="file" accept=".zip,.tar.gz,.tar,.rar,.7z" class="input-field">
+                    <p class="text-xs text-gray-400 mt-1">Upload your product package</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Thumbnail Image</label>
+                    <input type="file" id="thumbnail" accept="image/*" class="input-field">
+                </div>
+            </div>
+            <label class="flex items-center space-x-3">
+                <input type="checkbox" id="requires_license" checked class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <span class="text-sm text-gray-700">Requires license key for activation</span>
+            </label>
+            <input type="hidden" id="product_id" value="{{ product_id or '' }}">
+            <button type="submit" class="btn-primary w-full">
+                <i class="fas fa-spinner fa-spin hidden" id="spinner"></i>
+                <span id="btnText">{% if edit %}Update Product{% else %}Create Product{% endif %}</span>
+            </button>
+        </form>
+        <p id="errorMsg" class="text-red-500 text-sm text-center mt-4 hidden"></p>
+    </div>
+</div>
+
+<script>
+const edit = {{ edit|lower }};
+const productId = '{{ product_id or '' }}';
+
+if (edit && productId) {
+    (async () => {
+        try {
+            const res = await fetch(`${API_BASE}/products/${productId}`);
+            const p = await res.json();
+            document.getElementById('title').value = p.title;
+            document.getElementById('category').value = p.category;
+            document.getElementById('short_description').value = p.short_description;
+            document.getElementById('description').value = p.description;
+            document.getElementById('price').value = p.price;
+            document.getElementById('sale_price').value = p.sale_price || '';
+            document.getElementById('version').value = p.current_version;
+            document.getElementById('tags').value = p.tags;
+            document.getElementById('requires_license').checked = p.requires_license;
+        } catch {}
+    })();
+}
+
+document.getElementById('productForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    document.getElementById('spinner').classList.remove('hidden');
+    document.getElementById('btnText').textContent = edit ? 'Updating...' : 'Creating...';
+    btn.disabled = true;
+    document.getElementById('errorMsg').classList.add('hidden');
+
+    try {
+        if (edit) {
+            const res = await apiCall(`/products/${productId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    title: document.getElementById('title').value,
+                    category: document.getElementById('category').value,
+                    short_description: document.getElementById('short_description').value,
+                    description: document.getElementById('description').value,
+                    price: parseFloat(document.getElementById('price').value),
+                    sale_price: parseFloat(document.getElementById('sale_price').value) || 0,
+                    current_version: document.getElementById('version').value,
+                    tags: document.getElementById('tags').value,
+                    requires_license: document.getElementById('requires_license').checked,
+                })
+            });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Update failed');
+            window.location.href = '/seller';
+        } else {
+            const formData = new FormData();
+            formData.append('title', document.getElementById('title').value);
+            formData.append('category', document.getElementById('category').value);
+            formData.append('short_description', document.getElementById('short_description').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('sale_price', document.getElementById('sale_price').value || '0');
+            formData.append('current_version', document.getElementById('version').value);
+            formData.append('tags', document.getElementById('tags').value);
+            formData.append('requires_license', document.getElementById('requires_license').checked);
+            const fileInput = document.getElementById('file');
+            const thumbInput = document.getElementById('thumbnail');
+            if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
+            if (thumbInput.files[0]) formData.append('thumbnail', thumbInput.files[0]);
+
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE}/products`, {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                body: formData
+            });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Creation failed');
+            window.location.href = '/seller';
+        }
+    } catch (err) {
+        document.getElementById('errorMsg').textContent = err.message;
+        document.getElementById('errorMsg').classList.remove('hidden');
+        btn.disabled = false;
+        document.getElementById('spinner').classList.add('hidden');
+        document.getElementById('btnText').textContent = edit ? 'Update Product' : 'Create Product';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{
+  "Version": 1,
+  "Hash": "XaOgc4QWCWOwIiNBMeuhSHKs4+iMx/SekHVpJK81sNQ=",
+  "Source": "SocialBot",
+  "BasePath": "_content/SocialBot",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "SocialBot\\wwwroot",
+      "Source": "SocialBot",
+      "ContentRoot": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\",
+      "BasePath": "_content/SocialBot",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\css\\style.css",
+      "SourceId": "SocialBot",
+      "SourceType": "Discovered",
+      "ContentRoot": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\",
+      "BasePath": "_content/SocialBot",
+      "RelativePath": "css/style.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\style.css"
+    },
+    {
+      "Identity": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\index.html",
+      "SourceId": "SocialBot",
+      "SourceType": "Discovered",
+      "ContentRoot": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\",
+      "BasePath": "_content/SocialBot",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\index.html"
+    },
+    {
+      "Identity": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\js\\app.js",
+      "SourceId": "SocialBot",
+      "SourceType": "Discovered",
+      "ContentRoot": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\",
+      "BasePath": "_content/SocialBot",
+      "RelativePath": "js/app.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\js\\app.js"
+    }
+  ]
+}

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SocialBot - Meta Manager</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">
+        <h1>SocialBot</h1>
+        <small>Meta Manager</small>
+    </div>
+    <nav>
+        <a href="#" class="active" data-page="dashboard">
+            <span>&#9632;</span> <span>Dashboard</span>
+        </a>
+        <a href="#" data-page="pages">
+            <span>&#9679;</span> <span>Faqet</span>
+        </a>
+        <a href="#" data-page="posts">
+            <span>&#9998;</span> <span>Postimet</span>
+        </a>
+        <a href="#" data-page="comments">
+            <span>&#9993;</span> <span>Komente</span>
+        </a>
+        <a href="#" data-page="instagram">
+            <span>&#9673;</span> <span>Instagram</span>
+        </a>
+        <a href="#" data-page="aisettings">
+            <span>&#9889;</span> <span>AI Content</span>
+        </a>
+        <a href="#" data-page="settings">
+            <span>&#9881;</span> <span>Konfigurime</span>
+        </a>
+    </nav>
+</div>
+
+<div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+        <div id="loginSection" style="display:none;">
+            <div class="card" style="text-align:center;padding:40px;border:2px dashed var(--primary);">
+                <div style="font-size:64px;margin-bottom:16px;">&#128100;</div>
+                <h2 style="margin-bottom:8px;">Mirë se vini në SocialBot!</h2>
+                <p style="color:var(--text2);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto;">
+                    Lidh llogarinë tënde të Facebook për të menaxhuar faqet, postimet dhe komentet nga një panel i vetëm.
+                </p>
+                <div style="margin-bottom:16px;">
+                    <a id="loginBtn" href="#" class="btn btn-primary btn-lg" style="font-size:16px;padding:14px 36px;background:#1877f2;">
+                        &#128279; Lidhu me Facebook
+                    </a>
+                </div>
+                <div style="color:var(--text2);font-size:12px;">
+                    <span>Nuk ke ende App ID? </span>
+                    <a href="#" onclick="navigateTo('settings');return false;" style="color:var(--primary);">Krijo nje Meta App</a>
+                </div>
+            </div>
+        </div>
+        <div id="dashboardMain" style="display:none;">
+            <h2>&#9632; Dashboard</h2>
+            <div id="selectedPageInfo" style="margin-bottom:16px;color:var(--text2);font-size:13px;"></div>
+            <div class="grid grid-3" id="statsGrid">
+                <div class="stat-card"><div class="label">Faqe te lidhura</div><div class="value" id="statPages">0</div></div>
+                <div class="stat-card"><div class="label">Postime totale</div><div class="value" id="statPosts">0</div></div>
+                <div class="stat-card"><div class="label">Komente totale</div><div class="value" id="statComments">0</div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Postimet e fundit</h3></div>
+                <div id="recentPosts"><div class="empty-state"><div class="icon">&#128240;</div><p>Nuk ka postime. Lidh nje faqe per te filluar.</p></div></div>
+            </div>
+            <div style="margin-top:8px;color:var(--text2);font-size:11px;text-align:right;" id="dashboardStatus"></div>
+        </div>
+    </div>
+
+    <!-- PAGES -->
+    <div class="page" id="page-pages">
+        <h2>&#9679; Faqet e mia</h2>
+        <div id="pagesList"></div>
+    </div>
+
+    <!-- POSTS -->
+    <div class="page" id="page-posts">
+        <h2>&#9998; Postimet</h2>
+        <div id="postsContainer">
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header"><h3>Krijo postim te ri</h3></div>
+                <form id="postForm">
+                    <div class="form-group">
+                        <label>Faqja</label>
+                        <select id="postPage" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Teksti i postimit</label>
+                        <textarea id="postMessage" rows="4" placeholder="Shkruaj permbajtjen e postimit..." required></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-bottom:12px;">
+                        <button type="button" class="btn btn-sm btn-outline" onclick="openAiGenerator()">&#9889; Gjenero me AI</button>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="checkPostModeration()">&#128276; Moderim</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Foto/Video URL</label>
+                        <input type="url" id="postMedia" placeholder="https://example.com/foto.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label>Ose ngarko nga kompjuteri</label>
+                        <input type="file" id="postMediaFile" accept="image/*,video/*">
+                    </div>
+                    <div class="grid grid-2" style="gap:12px;">
+                        <div class="form-group">
+                            <label>Tipi i medias</label>
+                            <select id="postMediaType">
+                                <option value="photo">Foto</option>
+                                <option value="video">Video</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Planifiko per (opsionale)</label>
+                            <input type="datetime-local" id="postSchedule">
+                        </div>
+                    </div>
+                    <div id="moderationBadge" style="margin-bottom:8px;"></div>
+                    <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="btnPublish">
+                        Publiko / Planifiko
+                    </button>
+                </form>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Postime te skeduluara</h3></div>
+                <div id="scheduledPosts"><div class="empty-state"><p>Nuk ka postime te skeduluara.</p></div></div>
+            </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+            <div class="card-header"><h3>Postimet ekzistuese</h3></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Data</th><th>Permbajtja</th><th>Like</th><th>Komente</th><th>Status</th><th>Veprime</th></tr></thead>
+                    <tbody id="postsTable"></tbody>
+                </table>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- COMMENTS -->
+    <div class="page" id="page-comments">
+        <h2>&#9993; Komentet</h2>
+        <div class="card">
+            <div class="card-header"><h3>Zgjidh nje postim per te pare komentet</h3></div>
+            <div id="commentsSection">
+                <div class="empty-state"><p>Ngarko postimet per te pare komentet.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INSTAGRAM -->
+    <div class="page" id="page-instagram">
+        <h2>&#9673; Instagram</h2>
+        <div class="card">
+            <div class="card-header"><h3>Publikim ne Instagram</h3></div>
+            <div id="instaStatus"></div>
+            <form id="instaForm" style="display:none;">
+                <div class="form-group">
+                    <label>Caption</label>
+                    <textarea id="instaCaption" rows="3" placeholder="Shkruaj pershkrimin..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>URL e imazhit/videos</label>
+                    <input type="url" id="instaMedia" placeholder="https://example.com/foto.jpg" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipi</label>
+                    <select id="instaMediaType">
+                        <option value="IMAGE">Imazh</option>
+                        <option value="VIDEO">Video</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-instagram btn-lg" style="width:100%;background:var(--instagram);color:#fff;">
+                    Publiko ne Instagram
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI SETTINGS -->
+    <div class="page" id="page-aisettings">
+        <h2>&#9889; AI Content Generator</h2>
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header"><h3>Gjenero permbajtje me AI</h3></div>
+                <form id="aiGenerateForm">
+                    <div class="form-group">
+                        <label>Tema ose pershkrimi</label>
+                        <input type="text" id="aiTopic" placeholder="p.sh. 'Produkt i ri', 'Festat e fundvitit', 'Lajme'">
+                    </div>
+                    <div class="form-group">
+                        <label>Toni i komunikimit</label>
+                        <select id="aiTone">
+                            <option value="professional">Profesional</option>
+                            <option value="casual">I relaksuar</option>
+                            <option value="humorous">Humoristik</option>
+                            <option value="inspirational">Inspirues</option>
+                            <option value="promotional">Promovues</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngarko imazh (opsionale)</label>
+                        <input type="file" id="aiImage" accept="image/*">
+                        <div id="aiImagePreview" style="margin-top:8px;display:none;">
+                            <img id="aiImagePreviewImg" style="max-width:200px;max-height:150px;border-radius:6px;">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="btnAiGenerate">
+                        &#9889; Gjenero me AI
+                    </button>
+                </form>
+                <div id="aiResult" style="display:none;margin-top:16px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Moderimi i permbajtjes</h3></div>
+                <div class="form-group">
+                    <label>Testo nje tekst per shkelje te rregullores</label>
+                    <textarea id="moderationText" rows="4" placeholder="Ngjit nje tekst per ta analizuar..."></textarea>
+                </div>
+                <button class="btn btn-outline" onclick="checkModeration()">Kontrollo</button>
+                <div id="moderationResult" style="margin-top:12px;"></div>
+            </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+            <div class="card-header"><h3>Konfigurimi i AI Provider</h3></div>
+            <div class="alert alert-info">
+                Zgjidh nje provider AI per gjenerimin e permbajtjes. Rekomandohet <strong>OpenAI</strong> ose <strong>Gemini</strong> (falas).
+            </div>
+            <form id="aiSettingsForm">
+                <div class="form-group">
+                    <label>Provider</label>
+                    <select id="aiProvider">
+                        <option value="openai">OpenAI (GPT-4o-mini)</option>
+                        <option value="gemini">Google Gemini</option>
+                        <option value="ollama">Ollama (Lokale)</option>
+                    </select>
+                </div>
+                <div id="aiOpenAiFields">
+                    <div class="form-group">
+                        <label>OpenAI API Key</label>
+                        <input type="password" id="aiOpenAiKey" placeholder="sk-...">
+                    </div>
+                </div>
+                <div id="aiGeminiFields" style="display:none;">
+                    <div class="form-group">
+                        <label>Gemini API Key</label>
+                        <input type="password" id="aiGeminiKey" placeholder="AIza...">
+                    </div>
+                </div>
+                <div id="aiOllamaFields" style="display:none;">
+                    <div class="form-group">
+                        <label>Ollama Endpoint</label>
+                        <input type="text" id="aiOllamaEndpoint" value="http://localhost:11434">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="aiModerationEnabled" checked>
+                        Aktivizo moderim automatik
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Ruaj konfigurimin AI</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+        <h2>&#9881; Konfigurime</h2>
+
+        <div id="setupSteps">
+
+            <div class="card" style="border-left: 4px solid var(--primary);">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="background:var(--primary);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;">1</div>
+                    <div style="flex:1;">
+                        <strong>Kopjo App ID dhe App Secret nga app-i yt "AutoPart"</strong>
+                        <p style="color:var(--text2);font-size:12px;margin-top:2px;">Ne panelin e Meta, shko tek Settings > Basic</p>
+                    </div>
+                    <a href="https://developers.facebook.com" target="_blank" class="btn btn-primary btn-sm">&#128279; Hap</a>
+                </div>
+            </div>
+
+            <div class="card" style="border-left: 4px solid var(--primary);">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="background:var(--primary);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;">2</div>
+                    <div style="flex:1;">
+                        <strong>Vendos App ID dhe App Secret ketu</strong>
+                        <p style="color:var(--text2);font-size:12px;margin-top:2px;">App ID: nje numer i gjate, App Secret: kliko "Show"</p>
+                    </div>
+                </div>
+                <form id="settingsForm" style="margin-top:12px;">
+                    <div class="grid grid-2" style="gap:12px;">
+                        <div class="form-group">
+                            <label>App ID</label>
+                            <input type="text" id="settingsAppId" placeholder="P.sh. 1234567890123456" required>
+                        </div>
+                        <div class="form-group">
+                            <label>App Secret</label>
+                            <input type="password" id="settingsAppSecret" placeholder="Kliko 'Show' ne Meta" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="btnSaveSettings">&#128279; Ruaj</button>
+                </form>
+            </div>
+
+            <div class="card" style="border-left: 4px solid var(--primary);" id="step3Card">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="background:var(--primary);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;">3</div>
+                    <div style="flex:1;">
+                        <strong>Lidhu me Facebook</strong>
+                        <p style="color:var(--text2);font-size:12px;margin-top:2px;">Kliko butonin per te autorizuar</p>
+                    </div>
+                    <a id="authLink" href="#" class="btn btn-primary btn-sm" style="background:#1877f2;display:none;">&#128279; Lidhu me Facebook</a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card" id="authStatusCard" style="display:none;">
+            <div class="card-header"><h3>Statusi</h3></div>
+            <div id="authStatus" class="alert alert-warning">Nuk je i lidhur.</div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <button id="btnAuthStatus" class="btn btn-outline">Kontrollo Token</button>
+                <button id="btnAuthRefresh" class="btn btn-outline" style="display:none;">Rifresko faqet</button>
+                <button id="btnDebug" class="btn btn-outline" style="display:none;" onclick="showDebug()">&#128269; Debug API</button>
+            </div>
+        </div>
+
+        <div style="color:var(--text2);font-size:12px;padding:12px;text-align:center;">
+            &#128161; Pasi te lidhesh, shko te <a href="#" onclick="navigateTo('pages');return false;">Faqet</a> per te zgjedhur faqen
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

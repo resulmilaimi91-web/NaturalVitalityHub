@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoCoupon</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">🏷️</span>
+          <span class="logo-text">AutoCoupon</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="badge" id="countBadge">0</span>
+        <button class="btn-icon" id="settingsBtn" title="Opsione">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Status Bar -->
+    <div id="statusBar" class="status idle">
+      <div class="status-indicator"></div>
+      <span id="statusText">Gati për të kërkuar</span>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-container">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Kërko kupon..." autocomplete="off">
+        <button class="search-clear hidden" id="searchClear">✕</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Coupon List -->
+      <div id="couponList" class="coupon-list"></div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">Asnjë kupon</div>
+        <div class="empty-sub">Kliko "Kërko" për të gjetur kupona në këtë faqe</div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="loading-state hidden">
+        <div class="spinner"></div>
+        <div>Duke kërkuar kupon...</div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button id="scanBtn" class="btn btn-primary">
+        <span class="btn-icon">🔍</span>
+        <span>Kërko Kupona</span>
+      </button>
+      <button id="autoApplyBtn" class="btn btn-secondary">
+        <span class="btn-icon">⚡</span>
+        <span>Auto-Apply</span>
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <button id="historyBtn" class="footer-btn">
+        <span>📋</span>
+        <span>Historiku</span>
+      </button>
+      <button id="optionsBtn" class="footer-btn">
+        <span>⚙️</span>
+        <span>Opsione</span>
+      </button>
+      <button id="helpBtn" class="footer-btn">
+        <span>❓</span>
+        <span>Ndihmë</span>
+      </button>
+      <button id="earningsBtn" class="footer-btn">
+        <span>💰</span>
+        <span>Të ardhura</span>
+      </button>
+    </footer>
+  </div>
+
+  <!-- History Panel -->
+  <div id="historyPanel" class="panel hidden">
+    <div class="panel-header">
+      <button id="historyBack" class="btn-back">←</button>
+      <h2>Historiku</h2>
+      <button id="clearHistory" class="btn-danger" title="Pastro">🗑️</button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+    <div id="historyEmpty" class="history-empty">
+      <div class="empty-icon">📋</div>
+      <div>Asnjë histori</div>
+    </div>
+  </div>
+
+  <!-- Earnings Panel -->
+  <div id="earningsPanel" class="panel hidden">
+    <div class="panel-header">
+      <button id="earningsBack" class="btn-back">←</button>
+      <h2>💰 Të ardhura</h2>
+    </div>
+    <div class="earnings-content">
+      <div class="earnings-card">
+        <div class="earnings-label">Të ardhura totale</div>
+        <div class="earnings-value" id="totalEarnings">$0.00</div>
+      </div>
+      <div class="earnings-card">
+        <div class="earnings-label">Këtë muaj</div>
+        <div class="earnings-value" id="monthEarnings">$0.00</div>
+      </div>
+      <div class="earnings-stats">
+        <div class="stat-item">
+          <span class="stat-label">Klikime</span>
+          <span class="stat-value" id="totalClicks">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Konvertime</span>
+          <span class="stat-value" id="totalConversions">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Norma</span>
+          <span class="stat-value" id="conversionRate">0%</span>
+        </div>
+      </div>
+      <div class="earnings-partners">
+        <h3>Partnerët tanë</h3>
+        <div id="partnersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Panel -->
+  <div id="helpPanel" class="panel hidden">
+    <div class="panel-header">
+      <button id="helpBack" class="btn-back">←</button>
+      <h2>Ndihmë</h2>
+    </div>
+    <div class="help-content">
+      <div class="help-section">
+        <h3>Si funksionon?</h3>
+        <ol>
+          <li>Hap një faqe shitjesh online</li>
+          <li>Kliko "Kërko Kupona"</li>
+          <li>Zgjidh një kupon nga lista</li>
+          <li>Kliko për ta kopjuar ose përdor "Auto-Apply"</li>
+        </ol>
+      </div>
+      <div class="help-section">
+        <h3>Auto-Apply</h3>
+        <p>Kur aktivizohet, kuponat aplikohen automatikisht kur hapet një faqe e re.</p>
+      </div>
+      <div class="help-section">
+        <h3>Tips</h3>
+        <ul>
+          <li>Përdor search për të gjetur kupon specifik</li>
+          <li>Kliko dy herë për të kopjuar kodin</li>
+          <li>Shiko historikun për të parë kuponat e përdorur</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Tesla Trip Logger</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #0a0a0f; color: #e0e0e0; padding: 16px; max-width: 800px; margin: 0 auto; font-size: 16px; }
+h1 { font-size: 28px; margin-bottom: 16px; color: #fff; display: flex; align-items: center; gap: 10px; }
+h1 span { background: #e82127; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+h2 { font-size: 18px; margin: 16px 0 8px 0; color: #ccc; border-bottom: 1px solid #222; padding-bottom: 4px; }
+.card { background: #14151a; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #222; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: #1a1b22; border-radius: 8px; padding: 12px; text-align: center; }
+.stat .val { font-size: 28px; font-weight: bold; color: #fff; }
+.stat .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; margin-top: 8px; }
+input, select { width: 100%; padding: 12px 14px; background: #1a1b22; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 16px; outline: none; }
+input:focus { border-color: #e82127; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+.btn-primary { background: #e82127; color: #fff; }
+.btn-secondary { background: #222; color: #ccc; }
+.btn-danger { background: #441515; color: #ff6666; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #1a1b22; }
+th { color: #888; font-size: 11px; text-transform: uppercase; }
+td { color: #ddd; }
+tr:hover { background: #1a1b22; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+.badge-green { background: #143; color: #4caf50; }
+.badge-yellow { background: #432; color: #ffa726; }
+.empty { text-align: center; padding: 24px; color: #555; font-size: 14px; }
+.delete-btn { background: none; border: none; color: #e82127; cursor: pointer; font-size: 16px; padding: 4px; }
+.savings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.saving-card { background: #0d1f0d; border: 1px solid #1a3a1a; border-radius: 8px; padding: 12px; text-align: center; }
+.saving-card .val { color: #4caf50; font-size: 24px; }
+.saving-card .lbl { color: #6a6; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<h1>Tesla Trip Logger <span>USB</span></h1>
+
+<div class="card">
+  <div class="stats" id="stats">
+    <div class="stat"><div class="val" id="totalKm">0</div><div class="lbl">Total km</div></div>
+    <div class="stat"><div class="val" id="totalTrips">0</div><div class="lbl">Trips</div></div>
+    <div class="stat"><div class="val" id="avgWh">0</div><div class="lbl">Avg Wh/km</div></div>
+    <div class="stat"><div class="val" id="savedCo2">0</div><div class="lbl">CO₂ kg saved</div></div>
+  </div>
+  <div class="savings">
+    <div class="saving-card"><div class="val" id="savedEuro">€0</div><div class="lbl">vs Diesel</div></div>
+    <div class="saving-card"><div class="val" id="savedEuroPetrol">€0</div><div class="lbl">vs Petrol</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>New Trip</h2>
+  <label>Date</label>
+  <input type="date" id="tripDate">
+  <label>Description</label>
+  <input type="text" id="tripDesc" placeholder="e.g. Tirana-Durres">
+  <label>Distance (km)</label>
+  <input type="number" id="tripKm" placeholder="e.g. 42" step="0.1" min="0">
+  <label>Energy used (kWh)</label>
+  <input type="number" id="tripKwh" placeholder="e.g. 6.5" step="0.1" min="0">
+  <label>Starting battery (%)</label>
+  <input type="number" id="tripStart" placeholder="e.g. 80" min="0" max="100">
+  <label>Ending battery (%)</label>
+  <input type="number" id="tripEnd" placeholder="e.g. 52" min="0" max="100">
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="addTrip()">+ Save Trip</button>
+    <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Trip History</h2>
+  <div id="tripList"><div class="empty">No trips yet. Start logging!</div></div>
+  <div class="btn-row" style="margin-top:8px;">
+    <button class="btn btn-danger" onclick="clearAll()">Delete All</button>
+    <button class="btn btn-secondary" onclick="exportData()">Export CSV</button>
+  </div>
+</div>
+
+<script>
+const WH_PER_KM_DIESEL = 250;
+const CO2_PER_KM_DIESEL = 0.120;
+const DIESEL_EURO_PER_KM = 0.12;
+const PETROL_EURO_PER_KM = 0.10;
+
+function getTrips() { return JSON.parse(localStorage.getItem('teslaTrips') || '[]'); }
+function saveTrips(t) { localStorage.setItem('teslaTrips', JSON.stringify(t)); }
+
+function addTrip() {
+  let date = document.getElementById('tripDate').value;
+  let desc = document.getElementById('tripDesc').value.trim();
+  let km = parseFloat(document.getElementById('tripKm').value);
+  let kwh = parseFloat(document.getElementById('tripKwh').value);
+  let start = parseInt(document.getElementById('tripStart').value) || 0;
+  let end = parseInt(document.getElementById('tripEnd').value) || 0;
+  if (!km || km <= 0) { alert('Enter distance'); return; }
+  if (!date) { date = new Date().toISOString().split('T')[0]; }
+  if (!desc) { desc = 'Trip ' + (getTrips().length + 1); }
+  let trips = getTrips();
+  trips.unshift({ id: Date.now(), date, desc, km, kwh, start, end, whkm: kwh ? Math.round(kwh * 1000 / km) : 0 });
+  saveTrips(trips);
+  render();
+  clearForm();
+}
+
+function deleteTrip(id) {
+  let trips = getTrips().filter(t => t.id !== id);
+  saveTrips(trips);
+  render();
+}
+
+function clearForm() {
+  document.getElementById('tripKm').value = '';
+  document.getElementById('tripKwh').value = '';
+  document.getElementById('tripStart').value = '';
+  document.getElementById('tripEnd').value = '';
+  document.getElementById('tripDesc').value = '';
+}
+
+function clearAll() {
+  if (confirm('Delete all trips?')) { saveTrips([]); render(); }
+}
+
+function exportData() {
+  let trips = getTrips();
+  if (!trips.length) { alert('No data to export'); return; }
+  let csv = 'Date,Description,Distance (km),Energy (kWh),Wh/km,Start Battery,End Battery\n';
+  trips.forEach(t => { csv += `${t.date},${t.desc},${t.km},${t.kwh},${t.whkm},${t.start},${t.end}\n`; });
+  let blob = new Blob([csv], { type: 'text/csv' });
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'tesla-trips.csv'; a.click();
+}
+
+function render() {
+  let trips = getTrips();
+  let tkm = 0, tkwh = 0;
+  trips.forEach(t => { tkm += t.km; tkwh += t.kwh; });
+  let avg = tkm > 0 ? Math.round((tkwh * 1000) / tkm) : 0;
+
+  document.getElementById('totalKm').textContent = tkm.toFixed(0);
+  document.getElementById('totalTrips').textContent = trips.length;
+  document.getElementById('avgWh').textContent = avg;
+  document.getElementById('savedCo2').textContent = (tkm * CO2_PER_KM_DIESEL).toFixed(0);
+  document.getElementById('savedEuro').textContent = '€' + (tkm * DIESEL_EURO_PER_KM).toFixed(1);
+  document.getElementById('savedEuroPetrol').textContent = '€' + (tkm * PETROL_EURO_PER_KM).toFixed(1);
+
+  let html = '';
+  if (!trips.length) { html = '<div class="empty">No trips yet. Start logging!</div>'; }
+  else {
+    html = `<table><thead><tr><th>Date</th><th>Description</th><th>km</th><th>kWh</th><th>Wh/km</th><th></th></tr></thead><tbody>`;
+    trips.forEach(t => {
+      let badge = t.whkm < 160 ? 'badge-green' : t.whkm < 200 ? 'badge-yellow' : '';
+      html += `<tr><td>${t.date}</td><td>${t.desc}</td><td>${t.km}</td><td>${t.kwh}</td><td><span class="badge ${badge}">${t.whkm}</span></td>`;
+      html += `<td><button class="delete-btn" onclick="deleteTrip(${t.id})">✕</button></td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  document.getElementById('tripList').innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  let d = new Date(); document.getElementById('tripDate').value = d.toISOString().split('T')[0];
+  render();
+});
+</script>
+</body>
+</html>

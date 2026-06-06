@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Create Account - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+            <div class="text-center mb-8">
+                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-plus text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">Create Account</h1>
+                <p class="text-gray-500 text-sm mt-1">Join our marketplace</p>
+            </div>
+            <form id="registerForm" class="space-y-4">
+                <input type="hidden" id="is_seller" value="{{ request.query_params.get('seller', '') }}">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="full_name" class="input-field" placeholder="John Doe">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="username" class="input-field" placeholder="johndoe" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" class="input-field" placeholder="your@email.com" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" class="input-field" placeholder="Min 8 characters" minlength="8" required>
+                </div>
+                <label class="flex items-center space-x-3">
+                    <input type="checkbox" id="is_seller_check" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                    <span class="text-sm text-gray-700">I want to sell products</span>
+                </label>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-spinner fa-spin hidden" id="spinner"></i>
+                    <span id="btnText">Create Account</span>
+                </button>
+            </form>
+            <p id="errorMsg" class="text-red-500 text-sm text-center mt-4 hidden"></p>
+            <p class="text-center text-sm text-gray-500 mt-6">
+                Already have an account? <a href="/login" class="text-indigo-600 hover:text-indigo-700 font-medium">Sign In</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('seller')) document.getElementById('is_seller_check').checked = true;
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    const errorMsg = document.getElementById('errorMsg');
+    btn.disabled = true; spinner.classList.remove('hidden'); btnText.textContent = 'Creating account...'; errorMsg.classList.add('hidden');
+
+    try {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: document.getElementById('email').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                full_name: document.getElementById('full_name').value,
+                is_seller: document.getElementById('is_seller_check').checked
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Registration failed');
+        localStorage.setItem('token', data.access_token);
+        window.location.href = '/';
+    } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.classList.remove('hidden');
+        btn.disabled = false; spinner.classList.add('hidden'); btnText.textContent = 'Create Account';
+    }
+});
+</script>
+{% endblock %}

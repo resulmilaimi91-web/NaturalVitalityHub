@@ -1,0 +1,57 @@
+{
+  "raport_per": "06-2026",
+  "data_gjenerimit": "2026-06-05T16:13:57.714153",
+  "tracking": {
+    "muaji": 6,
+    "viti": 2026,
+    "klikime": 0,
+    "konvertime": 0,
+    "fitime_total": 0,
+    "konvertim_rate": 0
+  },
+  "total_tracking": {
+    "total_links": 1,
+    "total_clicks": 0,
+    "total_conversions": 0,
+    "conversion_rate_pct": 0,
+    "links": [
+      {
+        "id": "tu2b2ltf",
+        "url_origjinale": "https://ingeniuswave.com/DSvsl/#aff=resulpaypald725",
+        "produkti": "PrimeBiome - Gut & Skin Health",
+        "programi": "digistore24",
+        "data_krijimi": "2026-06-05T16:12:30.565180",
+        "clicks": 0,
+        "conversions": 0
+      }
+    ]
+  },
+  "permbledhje_artikujsh": {
+    "generated": "2026-06-05T16:13:38.241087",
+    "niche": "health-supplements",
+    "articles": [
+      {
+        "titull": "Rishikim i Plotë: Insomniac - Sleep Therapy ($37.03) - A Vlen ta Bleni?",
+        "slug": "rishikim-i-plot-insomniac-sleep-therapy-3703-a-vle",
+        "file": "rishikim-i-plot-insomniac-sleep-therapy-3703-a-vle.md",
+        "type": "review"
+      },
+      {
+        "titull": "Rishikim i Plotë: Pineal XT - Mental Clarity ($221.43) - A Vlen ta Bleni?",
+        "slug": "rishikim-i-plot-pineal-xt-mental-clarity-22143-a-v",
+        "file": "rishikim-i-plot-pineal-xt-mental-clarity-22143-a-v.md",
+        "type": "review"
+      },
+      {
+        "titull": "Udhëzues i Plotë për health-supplements - 2026-06-05",
+        "slug": "udhzues-i-plot-pr-health-supplements-2026-06-05",
+        "file": "udhzues-i-plot-pr-health-supplements-2026-06-05.md",
+        "type": "guide"
+      }
+    ]
+  },
+  "sugjerime": [
+    "Nuk ka fitime këtë muaj. Rishiko strategjinë e promovimit."
+  ],
+  "vleresimi": "Në fillim"
+}

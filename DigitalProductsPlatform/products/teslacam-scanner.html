@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TeslaCam Scanner</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #0a0a0f; color: #e0e0e0; padding: 16px; max-width: 900px; margin: 0 auto; font-size: 14px; }
+h1 { font-size: 24px; margin-bottom: 16px; color: #fff; display: flex; align-items: center; gap: 10px; }
+h1 span { background: #e82127; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+h2 { font-size: 16px; margin: 12px 0 8px; color: #ccc; border-bottom: 1px solid #222; padding-bottom: 4px; }
+.card { background: #14151a; border-radius: 12px; padding: 16px; margin-bottom: 10px; border: 1px solid #222; }
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.stat { background: #1a1b22; border-radius: 8px; padding: 10px; text-align: center; }
+.stat .val { font-size: 20px; font-weight: bold; color: #fff; }
+.stat .lbl { font-size: 10px; color: #888; margin-top: 2px; }
+input, select { width: 100%; padding: 10px 12px; background: #1a1b22; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
+.btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: #e82127; color: #fff; }
+.btn-secondary { background: #222; color: #ccc; }
+.btn-danger { background: #441515; color: #ff6666; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { padding: 6px 5px; text-align: left; border-bottom: 1px solid #1a1b22; }
+th { color: #888; font-size: 10px; text-transform: uppercase; }
+td { color: #ddd; }
+tr:hover { background: #1a1b22; }
+.badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 10px; }
+.badge-sentry { background: #421; color: #ff6b35; }
+.badge-dashcam { background: #143; color: #4caf50; }
+.badge-saved { background: #234; color: #42a5f5; }
+.badge-recent { background: #241; color: #8bc34a; }
+.badge-old { background: #333; color: #999; }
+.tab { display: inline-block; padding: 8px 16px; cursor: pointer; color: #888; border-bottom: 2px solid transparent; }
+.tab.active { color: #e82127; border-bottom: 2px solid #e82127; }
+.tab-bar { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid #222; }
+.folder-info { font-size: 12px; color: #666; margin-top: 4px; word-break: break-all; }
+.empty { text-align: center; padding: 32px; color: #555; }
+.drop-zone { border: 2px dashed #333; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; }
+.drop-zone:hover { border-color: #e82127; background: #1a1b22; }
+.drop-zone .icon { font-size: 40px; margin-bottom: 8px; }
+#progress { display: none; }
+.progress-bar { background: #1a1b22; border-radius: 8px; height: 16px; overflow: hidden; margin-top: 8px; }
+.progress-fill { background: #e82127; height: 100%; width: 0%; transition: width 0.3s; border-radius: 8px; }
+#progressText { font-size: 12px; color: #888; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>TeslaCam Scanner <span>USB</span></h1>
+
+<div class="card">
+  <div class="stats" id="stats">
+    <div class="stat"><div class="val" id="totalVideos">0</div><div class="lbl">Videos</div></div>
+    <div class="stat"><div class="val" id="totalSize">0 GB</div><div class="lbl">Total Size</div></div>
+    <div class="stat"><div class="val" id="sentryCount">0</div><div class="lbl">Sentry Events</div></div>
+    <div class="stat"><div class="val" id="freeSpace">-</div><div class="lbl">Free Space</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="tab-bar" id="tabBar">
+    <span class="tab active" onclick="switchTab('scan',this)">Scan USB</span>
+    <span class="tab" onclick="switchTab('events',this)">Events</span>
+    <span class="tab" onclick="switchTab('settings',this)">Settings</span>
+  </div>
+
+  <div id="tabScan">
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('folderInput').click()">
+      <div class="icon">📁</div>
+      <p><strong>Click to select TeslaCam folder</strong></p>
+      <p style="color:#666;font-size:12px;margin-top:4px;">Select your Tesla USB → TeslaCam folder</p>
+      <input type="file" id="folderInput" webkitdirectory multiple style="display:none" onchange="scanFolder(this.files)">
+    </div>
+    <div id="progress">
+      <p style="font-size:13px;color:#ccc;" id="scanStatus">Scanning...</p>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <p id="progressText">0 files found</p>
+    </div>
+    <div id="scanResult"></div>
+  </div>
+
+  <div id="tabEvents" style="display:none">
+    <div class="btn-row">
+      <select id="filterType" style="width:auto;flex:1;"><option value="all">All Types</option><option value="Sentry">Sentry</option><option value="Dashcam">Dashcam</option><option value="Saved">Saved</option></select>
+      <select id="filterSort" style="width:auto;flex:1;"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="size">Largest first</option></select>
+    </div>
+    <div id="eventList"><div class="empty">Scan a USB first</div></div>
+  </div>
+
+  <div id="tabSettings" style="display:none">
+    <label>Auto-delete after (days)</label>
+    <select id="autoDeleteDays"><option value="7">7 days</option><option value="14">14 days</option><option value="30" selected>30 days</option><option value="60">60 days</option><option value="0">Never</option></select>
+    <label style="margin-top:10px;">Minimum file size (MB)</label>
+    <input type="number" id="minSize" value="10" min="1">
+    <div class="btn-row"><button class="btn btn-secondary" onclick="saveSettings()">Save Settings</button></div>
+  </div>
+</div>
+
+<div class="card" id="actionCard" style="display:none">
+  <h2>Actions</h2>
+  <p id="selectedInfo" style="font-size:13px;color:#888;"></p>
+  <div class="btn-row">
+    <button class="btn btn-primary btn-sm" onclick="downloadList()">📋 Export List</button>
+    <button class="btn btn-danger btn-sm" onclick="showDeleteScript()">🗑️ Generate Delete Script</button>
+  </div>
+  <div id="scriptOutput" style="display:none;margin-top:8px;">
+    <label>Copy this to delete selected files:</label>
+    <textarea id="deleteScript" rows="4" style="width:100%;background:#0a0a0f;border:1px solid #333;border-radius:8px;padding:8px;color:#ccc;font-size:11px;font-family:monospace;" readonly></textarea>
+  </div>
+</div>
+
+<script>
+let allFiles = [];
+let filteredFiles = [];
+let selectedFiles = new Set();
+let db = {};
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('[id^="tab"]').forEach(t => t.style.display = 'none');
+  document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).style.display = '';
+  if (name === 'events') renderEvents();
+}
+
+function parseTeslaDate(name) {
+  let m = name.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/);
+  if (m) return new Date(m[1], m[2]-1, m[3], m[4], m[5], m[6]);
+  return null;
+}
+
+function getTypeFromPath(path) {
+  let p = path.replace(/\\/g, '/');
+  if (p.includes('SentryClips')) return 'Sentry';
+  if (p.includes('DashcamClips') || p.includes('Dashcam')) return 'Dashcam';
+  if (p.includes('SavedClips')) return 'Saved';
+  return 'Unknown';
+}
+
+function getEventName(path) {
+  let p = path.replace(/\\/g, '/');
+  let m = p.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/);
+  return m ? m[1] : 'unknown';
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  if (bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+  return (bytes/1024/1024/1024).toFixed(2) + ' GB';
+}
+
+function scanFolder(files) {
+  allFiles = [];
+  document.getElementById('progress').style.display = '';
+  document.getElementById('scanStatus').textContent = 'Scanning TeslaCam folder...';
+  document.getElementById('dropZone').style.display = 'none';
+
+  let total = files.length;
+  let count = 0;
+  let lastUpdate = 0;
+
+  for (let f of files) {
+    count++;
+    let path = f.webkitRelativePath || f.name;
+    if (/\.(mp4|mov|avi)$/i.test(f.name)) {
+      allFiles.push({
+        name: f.name,
+        path: path,
+        size: f.size,
+        date: parseTeslaDate(f.name) || f.lastModifiedDate || new Date(),
+        type: getTypeFromPath(path),
+        event: getEventName(path)
+      });
+    }
+    if (Date.now() - lastUpdate > 100) {
+      document.getElementById('progressFill').style.width = Math.min(100, (count/total)*100) + '%';
+      document.getElementById('progressText').textContent = count + ' / ' + total + ' files scanned, ' + allFiles.length + ' videos';
+      lastUpdate = Date.now();
+    }
+  }
+
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('scanStatus').textContent = '✅ Scan complete! ' + allFiles.length + ' videos found.';
+  document.getElementById('progressText').textContent = '';
+
+  updateStats();
+  renderEvents();
+
+  setTimeout(() => {
+    document.getElementById('progress').style.display = 'none';
+    document.getElementById('dropZone').style.display = '';
+    switchTab('events', document.querySelector('.tab:nth-child(2)'));
+  }, 1500);
+}
+
+function updateStats() {
+  let total = allFiles.length;
+  let size = allFiles.reduce((s, f) => s + f.size, 0);
+  let sentry = allFiles.filter(f => f.type === 'Sentry').length;
+  let dashcam = allFiles.filter(f => f.type === 'Dashcam').length;
+  let saved = allFiles.filter(f => f.type === 'Saved').length;
+
+  document.getElementById('totalVideos').textContent = total;
+  document.getElementById('totalSize').textContent = formatBytes(size);
+  document.getElementById('sentryCount').textContent = sentry;
+
+  let events = [...new Set(allFiles.map(f => f.event))].length;
+  document.querySelectorAll('.stat')[3].querySelector('.val').textContent = events;
+  document.querySelectorAll('.stat')[3].querySelector('.lbl').textContent = 'Events';
+}
+
+function renderEvents() {
+  let filter = document.getElementById('filterType').value;
+  let sort = document.getElementById('filterSort').value;
+  filteredFiles = allFiles;
+  if (filter !== 'all') filteredFiles = filteredFiles.filter(f => f.type === filter);
+  if (sort === 'newest') filteredFiles.sort((a, b) => b.date - a.date);
+  else if (sort === 'oldest') filteredFiles.sort((a, b) => a.date - b.date);
+  else if (sort === 'size') filteredFiles.sort((a, b) => b.size - a.size);
+
+  let container = document.getElementById('eventList');
+  if (!filteredFiles.length) {
+    container.innerHTML = '<div class="empty">' + (allFiles.length ? 'No videos match filter' : 'Scan a USB first') + '</div>';
+    return;
+  }
+
+  let groups = {};
+  filteredFiles.forEach(f => {
+    let key = f.event + '_' + f.type;
+    if (!groups[key]) groups[key] = { event: f.event, type: f.type, files: [], totalSize: 0, date: f.date };
+    groups[key].files.push(f);
+    groups[key].totalSize += f.size;
+    if (f.date > groups[key].date) groups[key].date = f.date;
+  });
+
+  let html = '<table><thead><tr><th>Event</th><th>Type</th><th>Files</th><th>Size</th><th>Date</th><th>Select</th></tr></thead><tbody>';
+  let sorted = Object.values(groups).sort((a, b) => b.date - a.date);
+
+  sorted.forEach(g => {
+    let badge = g.type === 'Sentry' ? 'badge-sentry' : g.type === 'Dashcam' ? 'badge-dashcam' : 'badge-saved';
+    let dateStr = g.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    let key = g.event + '|' + g.type;
+    let checked = selectedFiles.has(key) ? 'checked' : '';
+    let daysOld = Math.round((Date.now() - g.date) / 86400000);
+    let ageBadge = daysOld < 7 ? 'badge-recent' : daysOld > 30 ? 'badge-old' : '';
+    html += `<tr>
+      <td>${g.event}</td>
+      <td><span class="badge ${badge}">${g.type}</span></td>
+      <td>${g.files.length}</td>
+      <td>${formatBytes(g.totalSize)}</td>
+      <td><span class="badge ${ageBadge}">${dateStr}</span></td>
+      <td><input type="checkbox" ${checked} onchange="toggleSelect('${key}', this.checked)"></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+
+  updateActionCard();
+}
+
+function toggleSelect(key, checked) {
+  if (checked) selectedFiles.add(key);
+  else selectedFiles.delete(key);
+  updateActionCard();
+}
+
+function updateActionCard() {
+  let card = document.getElementById('actionCard');
+  if (selectedFiles.size > 0) {
+    card.style.display = '';
+    document.getElementById('selectedInfo').textContent = selectedFiles.size + ' event(s) selected — ' + getSelectedSize();
+    document.getElementById('scriptOutput').style.display = 'none';
+  } else {
+    card.style.display = 'none';
+  }
+}
+
+function getSelectedSize() {
+  let total = 0;
+  for (let key of selectedFiles) {
+    let [ev, typ] = key.split('|');
+    allFiles.filter(f => f.event === ev && f.type === typ).forEach(f => total += f.size);
+  }
+  return formatBytes(total);
+}
+
+function getSelectedFiles() {
+  let files = [];
+  for (let key of selectedFiles) {
+    let [ev, typ] = key.split('|');
+    allFiles.filter(f => f.event === ev && f.type === typ).forEach(f => files.push(f));
+  }
+  return files;
+}
+
+function downloadList() {
+  let files = getSelectedFiles();
+  if (!files.length) return;
+  let csv = 'Path,Name,Type,Date,Size (MB)\n';
+  files.forEach(f => {
+    csv += `${f.path},${f.name},${f.type},${f.date.toISOString()},${(f.size/1024/1024).toFixed(2)}\n`;
+  });
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'teslacam-events.csv'; a.click();
+}
+
+function showDeleteScript() {
+  let files = getSelectedFiles();
+  if (!files.length) return;
+  let script = '# TeslaCam - Files to delete\n';
+  script += '# Total: ' + files.length + ' files (' + formatBytes(files.reduce((s,f)=>s+f.size,0)) + ')\n';
+  script += '# Copy and run in Terminal (macOS/Linux) or PowerShell (Windows)\n\n';
+
+  let winPaths = files.map(f => 'Remove-Item -Path "' + f.path.replace(/\//g, '\\') + '"');
+  let unixPaths = files.map(f => 'rm "' + f.path + '"');
+
+  script += '# Windows (PowerShell):\n';
+  winPaths.forEach(l => script += l + '\n');
+  script += '\n# macOS/Linux:\n';
+  unixPaths.forEach(l => script += l + '\n');
+
+  document.getElementById('deleteScript').value = script;
+  document.getElementById('scriptOutput').style.display = '';
+}
+
+function saveSettings() {
+  let days = document.getElementById('autoDeleteDays').value;
+  let min = document.getElementById('minSize').value;
+  localStorage.setItem('teslacam_days', days);
+  localStorage.setItem('teslacam_min', min);
+  alert('Settings saved');
+}
+
+function loadSettings() {
+  let d = localStorage.getItem('teslacam_days');
+  let m = localStorage.getItem('teslacam_min');
+  if (d) document.getElementById('autoDeleteDays').value = d;
+  if (m) document.getElementById('minSize').value = m;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  document.getElementById('filterType').addEventListener('change', renderEvents);
+  document.getElementById('filterSort').addEventListener('change', renderEvents);
+});
+</script>
+</body>
+</html>

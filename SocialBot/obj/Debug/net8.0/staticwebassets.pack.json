@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\css\\style.css",
+      "PackagePath": "staticwebassets\\css\\style.css"
+    },
+    {
+      "Id": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "D:\\ANDROID\\opencode\\SocialBot\\wwwroot\\js\\app.js",
+      "PackagePath": "staticwebassets\\js\\app.js"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.SocialBot.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.SocialBot.props",
+      "PackagePath": "build\\SocialBot.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.SocialBot.props",
+      "PackagePath": "buildMultiTargeting\\SocialBot.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.SocialBot.props",
+      "PackagePath": "buildTransitive\\SocialBot.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

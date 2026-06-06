@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #1e1e23;
+      color: #c8cdd6;
+      padding: 16px;
+    }
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .search-box input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #3a3c44;
+      border-radius: 6px;
+      background: #2a2c33;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .search-box input:focus {
+      border-color: #0080d0;
+    }
+    .search-box button {
+      padding: 10px 20px;
+      background: #0064b0;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .search-box button:hover {
+      background: #0080d0;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .filters button {
+      padding: 4px 12px;
+      background: #2a2c33;
+      color: #8ab;
+      border: 1px solid #3a3c44;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .filters button.active {
+      background: #0064b0;
+      color: #fff;
+      border-color: #0064b0;
+    }
+    .filters button:hover {
+      background: #333640;
+    }
+    .stats {
+      color: #6a7a8a;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .results {
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .result-item {
+      background: #25272e;
+      border: 1px solid #333640;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .result-item:hover {
+      background: #2d3038;
+    }
+    .result-item .sheet-name {
+      color: #4a8abc;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .result-item .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px 16px;
+      margin-top: 4px;
+    }
+    .result-item .fields .field {
+      display: flex;
+      gap: 4px;
+      font-size: 13px;
+    }
+    .result-item .fields .field .label {
+      color: #6a7a8a;
+      min-width: 80px;
+    }
+    .result-item .fields .field .value {
+      color: #e0e5ee;
+      font-weight: 500;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #6a7a8a;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6a7a8a;
+    }
+    .highlight {
+      background: #3a5a3a;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Kërko: nr personal, emër, mbiemër, ose çdo fjalë..." autofocus>
+    <button onclick="doSearch()">Kërko</button>
+  </div>
+  <div class="filters">
+    <button class="active" data-filter="" onclick="setFilter(this,'')">Të gjitha</button>
+    <button data-filter="emer" onclick="setFilter(this,'emer')">Emri</button>
+    <button data-filter="mbiemer" onclick="setFilter(this,'mbiemer')">Mbiemri</button>
+    <button data-filter="nr" onclick="setFilter(this,'nr')">Nr Personal</button>
+    <button data-filter="telefon" onclick="setFilter(this,'telefon')">Telefon</button>
+    <button data-filter="email" onclick="setFilter(this,'email')">Email</button>
+  </div>
+  <div id="stats" class="stats">Shkruani një term për të kërkuar në të gjitha sheet-et</div>
+  <div id="results" class="results">
+    <div class="loading">⏳ Gati për kërkim...</div>
+  </div>
+
+  <script>
+    var currentFilter = '';
+
+    function setFilter(btn, filter) {
+      document.querySelectorAll('.filters button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentFilter = filter;
+      doSearch();
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') doSearch();
+    });
+
+    function highlightText(text, query) {
+      if (!query) return String(text);
+      var str = String(text);
+      var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var regex = new RegExp('(' + escaped + ')', 'gi');
+      return str.replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    function doSearch() {
+      var query = document.getElementById('searchInput').value;
+      if (!query || query.trim() === '') {
+        document.getElementById('stats').textContent = 'Shkruani një term për të kërkuar';
+        document.getElementById('results').innerHTML = '<div class="loading">⏳ Gati për kërkim...</div>';
+        return;
+      }
+
+      document.getElementById('stats').textContent = '⏳ Duke kërkuar...';
+      document.getElementById('results').innerHTML = '<div class="loading">⏳ Duke kërkuar në të gjitha sheet-et...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (response.error) {
+            document.getElementById('stats').textContent = response.error;
+            document.getElementById('results').innerHTML = '<div class="no-results">' + response.error + '</div>';
+            return;
+          }
+
+          var filteredResults = response.results;
+          if (currentFilter) {
+            filteredResults = response.results.filter(function(item) {
+              for (var key in item.data) {
+                var k = key.toLowerCase();
+                var v = String(item.data[key]).toLowerCase();
+                if (currentFilter === 'emer' && (k.includes('emer') || k.includes('emri'))) return true;
+                if (currentFilter === 'mbiemer' && (k.includes('mbiemer') || k.includes('mbiemri'))) return true;
+                if (currentFilter === 'nr' && (k.includes('nr') || k.includes('numër') || k.includes('personal') || k.includes('legjitim') || k.includes('letër'))) return true;
+                if (currentFilter === 'telefon' && (k.includes('telefon') || k.includes('tel') || k.includes('phone'))) return true;
+                if (currentFilter === 'email' && (k.includes('email') || k.includes('mail') || k.includes('e-mail'))) return true;
+              }
+              return false;
+            });
+          }
+
+          var stats = document.getElementById('stats');
+          stats.innerHTML = '<b>' + filteredResults.length + '</b> rezultate nga ' + response.total +
+            ' (në ' + response.sheets + ' sheets) — "' + response.query + '"';
+
+          var container = document.getElementById('results');
+          if (filteredResults.length === 0) {
+            container.innerHTML = '<div class="no-results">❌ Nuk u gjet asgjë për: "' + query + '"</div>';
+            return;
+          }
+
+          var html = '';
+          filteredResults.forEach(function(item) {
+            html += '<div class="result-item" onclick="goToSheet(\'' +
+              item.sheetName.replace(/'/g, "\\'") + '\',' + item.rowIndex + ')">';
+            html += '<div class="sheet-name">📄 ' + item.sheetName + ' — Rreshti ' + item.rowIndex + '</div>';
+            html += '<div class="fields">';
+            for (var key in item.data) {
+              html += '<div class="field">' +
+                '<span class="label">' + key + ':</span>' +
+                '<span class="value">' + highlightText(item.data[key], query) + '</span>' +
+                '</div>';
+            }
+            html += '</div></div>';
+          });
+          container.innerHTML = html;
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('stats').textContent = 'Gabim: ' + err.message;
+          document.getElementById('results').innerHTML = '<div class="no-results">❌ Gabim në kërkim: ' + err.message + '</div>';
+        })
+        .searchAllSheets(query);
+    }
+
+    function goToSheet(sheetName, rowIndex) {
+      google.script.run
+        .withSuccessHandler(function() {
+          setTimeout(function() {
+            google.script.host.close();
+          }, 300);
+        })
+        .withFailureHandler(function(err) {
+          alert('Nuk mund të hapet sheet-i: ' + err.message);
+        })
+        .activateSheetAndRow(sheetName, rowIndex);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #1e1e23;
+      color: #c8cdd6;
+      padding: 16px;
+    }
+    h2 { font-size: 18px; margin-bottom: 12px; }
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .controls input {
+      padding: 8px 12px;
+      border: 1px solid #3a3c44;
+      border-radius: 4px;
+      background: #2a2c33;
+      color: #fff;
+      font-size: 13px;
+      flex: 1;
+      min-width: 200px;
+    }
+    .controls select {
+      padding: 8px 12px;
+      border: 1px solid #3a3c44;
+      border-radius: 4px;
+      background: #2a2c33;
+      color: #fff;
+      font-size: 13px;
+    }
+    .controls button {
+      padding: 8px 16px;
+      background: #0064b0;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .controls button:hover { background: #0080d0; }
+    .controls button.export { background: #2d7d46; }
+    .controls button.export:hover { background: #3a9d56; }
+    .stats { color: #6a7a8a; font-size: 12px; margin-bottom: 8px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      background: #003d66;
+      color: #fff;
+      padding: 6px 8px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      cursor: pointer;
+      user-select: none;
+    }
+    th:hover { background: #00508a; }
+    td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #2a2c33;
+      white-space: nowrap;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    tr:nth-child(even) { background: #22242b; }
+    tr:hover { background: #2a2d36; }
+    .scrollable {
+      max-height: 480px;
+      overflow: auto;
+      border: 1px solid #333640;
+      border-radius: 4px;
+    }
+    .sheet-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .sheet-tab {
+      padding: 6px 14px;
+      background: #25272e;
+      border: 1px solid #333640;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      font-size: 12px;
+      color: #8ab;
+    }
+    .sheet-tab.active {
+      background: #003d66;
+      color: #fff;
+      border-color: #003d66;
+    }
+    .sheet-tab:hover { background: #2d3038; }
+    .sheet-tab.active:hover { background: #00508a; }
+  </style>
+</head>
+<body>
+  <h2>📊 Raporto - Pamje e të Gjitha të Dhënave</h2>
+  <div class="controls">
+    <input type="text" id="reportSearch" placeholder="Filtro në kohë reale..." oninput="filterReport()">
+    <select id="sheetSelect" onchange="switchSheet()"></select>
+    <button onclick="filterReport()">Filtro</button>
+    <button class="export" onclick="exportCSV()">📥 Export CSV</button>
+    <button onclick="window.print()">🖨️ Printo</button>
+  </div>
+  <div id="stats" class="stats">Duke ngarkuar...</div>
+  <div id="sheetTabs" class="sheet-tabs"></div>
+  <div class="scrollable">
+    <table id="reportTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    var allData = [];
+
+    function loadData() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          allData = data;
+          populateSheetSelect();
+          renderSheetTabs();
+          if (data.length > 0) renderSheet(data[0]);
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('stats').textContent = 'Gabim: ' + err.message;
+        })
+        .getSpreadsheetData();
+    }
+
+    function populateSheetSelect() {
+      var sel = document.getElementById('sheetSelect');
+      sel.innerHTML = '';
+      allData.forEach(function(s, i) {
+        var opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = s.name + ' (' + s.totalRows + ' rreshta)';
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderSheetTabs() {
+      var container = document.getElementById('sheetTabs');
+      container.innerHTML = '';
+      allData.forEach(function(s, i) {
+        var tab = document.createElement('div');
+        tab.className = 'sheet-tab' + (i === 0 ? ' active' : '');
+        tab.textContent = s.name;
+        tab.onclick = function() {
+          document.querySelectorAll('.sheet-tab').forEach(function(t) { t.classList.remove('active'); });
+          tab.classList.add('active');
+          document.getElementById('sheetSelect').value = i;
+          renderSheet(s);
+        };
+        container.appendChild(tab);
+      });
+    }
+
+    function switchSheet() {
+      var idx = parseInt(document.getElementById('sheetSelect').value);
+      document.querySelectorAll('.sheet-tab').forEach(function(t, i) {
+        t.classList.toggle('active', i === idx);
+      });
+      renderSheet(allData[idx]);
+    }
+
+    function renderSheet(sheet) {
+      if (!sheet) {
+        document.getElementById('stats').textContent = 'Nuk ka të dhëna';
+        document.getElementById('tableHead').innerHTML = '';
+        document.getElementById('tableBody').innerHTML = '';
+        return;
+      }
+
+      var query = document.getElementById('reportSearch').value.toLowerCase().trim();
+
+      var filteredRows = sheet.rows;
+      if (query) {
+        filteredRows = sheet.rows.filter(function(row) {
+          return row.some(function(cell) {
+            return String(cell).toLowerCase().includes(query);
+          });
+        });
+      }
+
+      document.getElementById('stats').innerHTML =
+        '<b>' + filteredRows.length + '</b> nga ' + sheet.totalRows + ' rreshta — "' + sheet.name + '"' +
+        (query ? ' — Duke kërkuar: "' + query + '"' : '');
+
+      var thead = document.getElementById('tableHead');
+      var tbody = document.getElementById('tableBody');
+
+      var headerHtml = '<tr>';
+      sheet.headers.forEach(function(h) {
+        headerHtml += '<th onclick="sortTable(this, \'' + h.replace(/'/g, "\\'") + '\')">' + h + ' ▲▼</th>';
+      });
+      headerHtml += '</tr>';
+      thead.innerHTML = headerHtml;
+
+      tbody.innerHTML = '';
+      filteredRows.forEach(function(row) {
+        var tr = document.createElement('tr');
+        row.forEach(function(cell) {
+          var td = document.createElement('td');
+          td.textContent = cell;
+          td.title = cell;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterReport() {
+      var idx = parseInt(document.getElementById('sheetSelect').value);
+      renderSheet(allData[idx]);
+    }
+
+    function sortTable(th, key) {
+      var idx = parseInt(document.getElementById('sheetSelect').value);
+      var sheet = allData[idx];
+      var colIdx = sheet.headers.indexOf(key);
+      if (colIdx === -1) return;
+
+      var asc = th._sortAsc === undefined ? true : !th._sortAsc;
+      th._sortAsc = asc;
+
+      sheet.rows.sort(function(a, b) {
+        var valA = String(a[colIdx] || '');
+        var valB = String(b[colIdx] || '');
+        var numA = parseFloat(valA.replace(',', '.'));
+        var numB = parseFloat(valB.replace(',', '.'));
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return asc ? numA - numB : numB - numA;
+        }
+        return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      });
+
+      renderSheet(sheet);
+    }
+
+    function exportCSV() {
+      var idx = parseInt(document.getElementById('sheetSelect').value);
+      var sheet = allData[idx];
+      if (!sheet) return;
+
+      var csv = sheet.headers.join(',') + '\n';
+      sheet.rows.forEach(function(row) {
+        csv += row.map(function(cell) {
+          var str = String(cell).replace(/"/g, '""');
+          return str.includes(',') || str.includes('"') ? '"' + str + '"' : str;
+        }).join(',') + '\n';
+      });
+
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = sheet.name + '_raport.csv';
+      link.click();
+    }
+
+    window.onload = loadData;
+  </script>
+</body>
+</html>

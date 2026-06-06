@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Seller Dashboard - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Seller Dashboard</h1>
+          <p class="text-gray-500 mt-1">Manage your products and sales</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="/seller/new" class="btn-primary"><i class="fas fa-plus mr-2"></i>New Product</a>
+          <a href="/analytics" class="btn-secondary"><i class="fas fa-chart-bar mr-2"></i>Analytics</a>
+        </div>
+    </div>
+
+    <div id="stats" class="grid md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"><div class="animate-pulse"><div class="h-4 bg-gray-200 rounded w-1/2"></div><div class="h-8 bg-gray-200 rounded w-1/3 mt-2"></div></div></div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"><div class="animate-pulse"><div class="h-4 bg-gray-200 rounded w-1/2"></div><div class="h-8 bg-gray-200 rounded w-1/3 mt-2"></div></div></div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"><div class="animate-pulse"><div class="h-4 bg-gray-200 rounded w-1/2"></div><div class="h-8 bg-gray-200 rounded w-1/3 mt-2"></div></div></div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"><div class="animate-pulse"><div class="h-4 bg-gray-200 rounded w-1/2"></div><div class="h-8 bg-gray-200 rounded w-1/3 mt-2"></div></div></div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-100">
+            <h2 class="text-lg font-bold text-gray-900">Your Products</h2>
+        </div>
+        <div id="seller-products" class="divide-y divide-gray-100">
+            <div class="p-6 text-center text-gray-400"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mt-8">
+        <div class="p-6 border-b border-gray-100">
+            <h2 class="text-lg font-bold text-gray-900">Recent Sales</h2>
+        </div>
+        <div id="recent-sales" class="divide-y divide-gray-100">
+            <div class="p-6 text-center text-gray-400"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadDashboard() {
+    if (!localStorage.getItem('token')) { window.location.href = '/login'; return; }
+    try {
+        const [statsRes, productsRes] = await Promise.all([
+            apiCall('/dashboard/seller'),
+            apiCall('/dashboard/seller/products')
+        ]);
+        const stats = await statsRes.json();
+        const products = await productsRes.json();
+
+        document.getElementById('stats').innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Products</p>
+                <p class="text-3xl font-bold text-gray-900 mt-1">${stats.total_products}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Total Sales</p>
+                <p class="text-3xl font-bold text-gray-900 mt-1">${stats.total_sales}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Revenue</p>
+                <p class="text-3xl font-bold text-green-600 mt-1">€${stats.total_revenue.toFixed(2)}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Downloads</p>
+                <p class="text-3xl font-bold text-gray-900 mt-1">${stats.total_downloads}</p>
+            </div>
+        `;
+
+        if (products.length === 0) {
+            document.getElementById('seller-products').innerHTML = '<div class="p-12 text-center text-gray-400"><i class="fas fa-box-open text-4xl mb-4"></i><p class="text-lg font-medium">No products yet</p><p class="text-sm mt-1">Create your first product to start selling</p><a href="/seller/new" class="btn-primary inline-block mt-4 !px-6"><i class="fas fa-plus mr-2"></i>Create Product</a></div>';
+        } else {
+            document.getElementById('seller-products').innerHTML = products.map(p => `
+                <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-box text-white"></i>
+                        </div>
+                        <div>
+                            <a href="/products/${p.slug}" class="font-medium text-gray-900 hover:text-indigo-600">${p.title}</a>
+                            <div class="flex items-center space-x-3 text-xs text-gray-500 mt-1">
+                                <span class="badge bg-indigo-100 text-indigo-700">${p.category}</span>
+                                <span>€${p.price}</span>
+                                <span><i class="fas fa-shopping-cart mr-1"></i>${p.sales_count || 0} sales</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="/seller/edit/${p.id}" class="px-3 py-1.5 text-sm text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"><i class="fas fa-edit"></i></a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        if (stats.recent_sales.length === 0) {
+            document.getElementById('recent-sales').innerHTML = '<div class="p-8 text-center text-gray-400"><p>No sales yet</p></div>';
+        } else {
+            document.getElementById('recent-sales').innerHTML = stats.recent_sales.map(s => `
+                <div class="p-4 flex justify-between items-center">
+                    <div>
+                        <p class="font-medium text-gray-900">${s.product_title}</p>
+                        <p class="text-xs text-gray-500">${new Date(s.created_at).toLocaleDateString()} · ${s.status}</p>
+                    </div>
+                    <span class="text-green-600 font-semibold">€${s.amount.toFixed(2)}</span>
+                </div>
+            `).join('');
+        }
+    } catch { document.getElementById('stats').innerHTML = '<div class="col-span-full text-center py-8 text-red-400">Failed to load dashboard</div>'; }
+}
+
+loadDashboard();
+</script>
+{% endblock %}

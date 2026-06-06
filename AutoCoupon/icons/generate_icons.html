@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Icons</title></head>
+<body style="display:flex;gap:20px;padding:40px;font-family:system-ui">
+<script>
+function createIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+
+  const r = size / 2;
+  const g = ctx.createRadialGradient(r, r, size*0.05, r, r, r*0.85);
+  g.addColorStop(0, '#34d399');
+  g.addColorStop(1, '#059669');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, size * 0.2);
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${size * 0.55}px system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('AC', r, r + size * 0.04);
+
+  const a = document.createElement('a');
+  a.href = c.toDataURL('image/png');
+  a.download = `icon${size}.png`;
+  a.textContent = `icon${size}.png (${size}px)`;
+  document.body.appendChild(a);
+  document.body.appendChild(document.createElement('br'));
+
+  c.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const img = document.createElement('img');
+    img.src = url; img.style.width = '64px'; img.style.margin = '8px 0';
+    document.body.appendChild(img);
+    document.body.appendChild(document.createElement('br'));
+  });
+}
+
+[16, 48, 128].forEach(createIcon);
+</script>
+</body>
+</html>

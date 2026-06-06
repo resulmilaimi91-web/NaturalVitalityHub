@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Shopping Cart - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6"><i class="fas fa-shopping-cart mr-2"></i>Shopping Cart</h1>
+    <div id="cart-content">
+        <div class="text-center py-16 text-gray-400"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><p>Loading cart...</p></div>
+    </div>
+</div>
+<script>
+function getCart() { try { return JSON.parse(localStorage.getItem('cart') || '[]'); } catch { return []; } }
+function saveCart(items) { localStorage.setItem('cart', JSON.stringify(items)); updateCartBadge(); }
+function updateCartBadge() {
+    const cart = getCart();
+    let badge = document.getElementById('cart-badge');
+    if (!badge) {
+        badge = document.createElement('span'); badge.id = 'cart-badge'; badge.className = 'absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold';
+        const cartIcon = document.getElementById('cart-icon-wrapper');
+        if (cartIcon) cartIcon.appendChild(badge);
+    }
+    badge.textContent = cart.length;
+    badge.style.display = cart.length > 0 ? 'flex' : 'none';
+}
+function addToCart(productId, title, price) {
+    let cart = getCart();
+    if (cart.some(i => i.id === productId)) { alert('Already in cart!'); return; }
+    cart.push({ id: productId, title, price });
+    saveCart(cart);
+    alert('Added to cart!');
+}
+
+async function loadCart() {
+    const cart = getCart();
+    if (cart.length === 0) {
+        document.getElementById('cart-content').innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fas fa-shopping-cart text-5xl mb-4"></i><p class="text-lg mb-4">Your cart is empty</p><a href="/products" class="btn-primary">Browse Products</a></div>';
+        return;
+    }
+    const productIds = cart.map(i => i.id);
+    let html = '<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">';
+    html += '<div class="p-6 space-y-4">';
+    let total = 0;
+    for (const item of cart) {
+        try {
+            const res = await fetch(`${API_BASE}/products/` + item.id);
+            if (res.ok) {
+                const p = await res.json();
+                const price = p.sale_price > 0 ? p.sale_price : p.price;
+                total += price;
+                html += `<div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg" data-id="${p.id}">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center"><i class="fas fa-box text-white"></i></div>
+                        <div><h3 class="font-semibold text-gray-900">${p.title}</h3><p class="text-sm text-gray-500">€${price.toFixed(2)}</p></div>
+                    </div>
+                    <button onclick="removeFromCart('${p.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                </div>`;
+            }
+        } catch {}
+    }
+    html += '</div>';
+    html += `<div class="border-t border-gray-200 p-6">
+        <div class="flex justify-between text-lg font-bold mb-4"><span>Total</span><span>€${total.toFixed(2)}</span></div>
+        <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1">Coupon Code</label>
+            <div class="flex gap-2"><input type="text" id="coupon-input" class="input-field flex-1" placeholder="Enter code">
+            <button onclick="applyCoupon()" class="btn-secondary text-sm">Apply</button></div>
+            <div id="coupon-msg" class="text-sm mt-1 hidden"></div>
+        </div>
+        <button onclick="checkoutCart()" class="btn-primary w-full"><i class="fas fa-lock mr-2"></i>Proceed to Checkout — €${total.toFixed(2)}</button>
+    </div></div>`;
+    document.getElementById('cart-content').innerHTML = html;
+    updateCartBadge();
+    window._cartTotal = total;
+}
+
+let appliedCoupon = '';
+function applyCoupon() {
+    const code = document.getElementById('coupon-input').value;
+    if (!code) return;
+    appliedCoupon = code;
+    document.getElementById('coupon-msg').className = 'text-sm mt-1 text-green-600';
+    document.getElementById('coupon-msg').textContent = 'Coupon will be applied at checkout';
+    document.getElementById('coupon-msg').classList.remove('hidden');
+}
+function removeFromCart(id) {
+    let cart = getCart().filter(i => i.id !== id);
+    saveCart(cart);
+    loadCart();
+}
+async function checkoutCart() {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; return; }
+    const cart = getCart();
+    if (cart.length === 0) return;
+    try {
+        const res = await apiCall('/checkout/cart', {
+            method: 'POST',
+            body: JSON.stringify({
+                product_ids: cart.map(i => i.id),
+                coupon_code: appliedCoupon,
+                success_url: window.location.origin + '/checkout/success',
+                failure_url: window.location.origin + '/checkout/failure'
+            })
+        });
+        const data = await res.json();
+        if (data.payment_url) {
+            localStorage.removeItem('cart');
+            window.location.href = data.payment_url;
+        } else alert('Error creating payment');
+    } catch (e) { alert('Checkout error: ' + e.message); }
+}
+
+loadCart();
+</script>
+{% endblock %}

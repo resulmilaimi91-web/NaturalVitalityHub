@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}.container{max-width:600px;margin:20px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)}.header{background:linear-gradient(135deg,#667eea,#764ba2);padding:30px;text-align:center}.header h1{color:#fff;margin:0;font-size:24px}.content{padding:30px}.content h2{color:#333;margin-top:0}.content p{color:#555;line-height:1.6}.footer{background:#f8f8f8;padding:20px;text-align:center;font-size:12px;color:#999}.key-box{background:#f3e8ff;border:2px dashed #764ba2;padding:15px 20px;border-radius:8px;text-align:center;margin:15px 0}.key-box code{font-size:18px;font-weight:bold;color:#5b21b6;letter-spacing:1px}</style></head>
+<body>
+<div class="container">
+<div class="header"><h1>{{ app_name }}</h1></div>
+<div class="content">
+<h2>Your License Key</h2>
+<p>Hi <strong>{{ username }}</strong>,</p>
+<p>Your license key for <strong>{{ product_title }}</strong> is ready:</p>
+<div class="key-box"><code>{{ license_key }}</code></div>
+<p>Use this key to activate your product. Keep it safe — you'll need it for future updates and support.</p>
+<p>You can view all your licenses in your account dashboard.</p>
+</div>
+<div class="footer">&copy; 2026 {{ app_name }}. All rights reserved.</div>
+</div>
+</body>
+</html>

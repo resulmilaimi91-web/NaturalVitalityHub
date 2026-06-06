@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Settings - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Account Settings</h1>
+    <div class="space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Profile</h2>
+            <form id="profile-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label><input type="text" id="full_name" class="input-field"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Username</label><input type="text" id="username" class="input-field"></div>
+                </div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Bio</label><textarea id="bio" rows="3" class="input-field"></textarea></div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Website</label><input type="url" id="website" class="input-field" placeholder="https://"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Twitter</label><input type="text" id="twitter" class="input-field" placeholder="username"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">GitHub</label><input type="text" id="github" class="input-field" placeholder="username"></div>
+                </div>
+                <button type="submit" class="btn-primary"><i class="fas fa-save mr-2"></i>Save Changes</button>
+                <span id="profile-msg" class="text-sm ml-4"></span>
+            </form>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+            <form id="password-form" class="space-y-4">
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label><input type="password" id="current_password" class="input-field" required></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">New Password</label><input type="password" id="new_password" class="input-field" required minlength="6"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Confirm New</label><input type="password" id="confirm_password" class="input-field" required></div>
+                </div>
+                <button type="submit" class="btn-primary"><i class="fas fa-key mr-2"></i>Change Password</button>
+                <span id="pw-msg" class="text-sm ml-4"></span>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+async function loadSettings() {
+    if (!currentUser) { window.location.href = '/login'; return; }
+    document.getElementById('full_name').value = currentUser.full_name || '';
+    document.getElementById('username').value = currentUser.username || '';
+    document.getElementById('bio').value = currentUser.bio || '';
+    document.getElementById('website').value = currentUser.website || '';
+    document.getElementById('twitter').value = currentUser.twitter || '';
+    document.getElementById('github').value = currentUser.github || '';
+}
+document.getElementById('profile-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const data = {
+        full_name: document.getElementById('full_name').value,
+        username: document.getElementById('username').value,
+        bio: document.getElementById('bio').value,
+        website: document.getElementById('website').value,
+        twitter: document.getElementById('twitter').value,
+        github: document.getElementById('github').value,
+    };
+    const res = await apiCall('/auth/profile', { method:'PUT', body: JSON.stringify(data) });
+    const msg = document.getElementById('profile-msg');
+    if (res.ok) { msg.className = 'text-sm ml-4 text-green-600'; msg.textContent = 'Saved!'; currentUser = await res.json(); }
+    else { const d = await res.json(); msg.className = 'text-sm ml-4 text-red-600'; msg.textContent = d.detail || 'Error'; }
+};
+document.getElementById('password-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const npw = document.getElementById('new_password').value;
+    if (npw !== document.getElementById('confirm_password').value) { document.getElementById('pw-msg').className = 'text-sm ml-4 text-red-600'; document.getElementById('pw-msg').textContent = 'Passwords do not match'; return; }
+    const res = await apiCall('/auth/change-password', { method:'POST', body: JSON.stringify({ current_password: document.getElementById('current_password').value, new_password: npw }) });
+    const msg = document.getElementById('pw-msg');
+    if (res.ok) { msg.className = 'text-sm ml-4 text-green-600'; msg.textContent = 'Password changed!'; this.reset(); }
+    else { const d = await res.json(); msg.className = 'text-sm ml-4 text-red-600'; msg.textContent = d.detail || 'Error'; }
+};
+loadSettings();
+</script>
+{% endblock %}

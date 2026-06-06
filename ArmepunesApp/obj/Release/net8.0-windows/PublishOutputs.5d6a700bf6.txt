@@ -1,0 +1,10 @@
+D:\ANDROID\opencode\ArmepunesApp\publish\ArmepunesApp.exe
+D:\ANDROID\opencode\ArmepunesApp\publish\ArmepunesApp.dll
+D:\ANDROID\opencode\ArmepunesApp\publish\ArmepunesApp.deps.json
+D:\ANDROID\opencode\ArmepunesApp\publish\ArmepunesApp.runtimeconfig.json
+D:\ANDROID\opencode\ArmepunesApp\publish\ArmepunesApp.pdb
+D:\ANDROID\opencode\ArmepunesApp\publish\System.Data.SQLite.dll
+D:\ANDROID\opencode\ArmepunesApp\publish\runtimes\linux-x64\native\SQLite.Interop.dll
+D:\ANDROID\opencode\ArmepunesApp\publish\runtimes\osx-x64\native\SQLite.Interop.dll
+D:\ANDROID\opencode\ArmepunesApp\publish\runtimes\win-x64\native\SQLite.Interop.dll
+D:\ANDROID\opencode\ArmepunesApp\publish\runtimes\win-x86\native\SQLite.Interop.dll

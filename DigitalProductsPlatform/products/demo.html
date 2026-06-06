@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin Demo - Security Scanner Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-16">
+        <div class="container mx-auto px-4 text-center">
+            <i class="fas fa-shield-alt text-6xl mb-4"></i>
+            <h1 class="text-4xl font-bold mb-4">Security Scanner Pro</h1>
+            <p class="text-xl mb-6">Complete WordPress Security Plugin</p>
+            <div class="text-3xl font-bold mb-6">$29</div>
+            <button onclick="alert('Redirecting to Gumroad...')" class="bg-white text-purple-600 px-8 py-3 rounded-full font-bold text-lg hover:bg-gray-100 transition">
+                <i class="fas fa-shopping-cart mr-2"></i>Buy Now
+            </button>
+        </div>
+    </header>
+
+    <!-- Features -->
+    <section class="py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Features</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <i class="fas fa-search text-4xl text-purple-600 mb-4"></i>
+                    <h3 class="font-bold text-xl mb-2">Malware Scanner</h3>
+                    <p class="text-gray-600">Real-time malware detection and removal</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <i class="fas fa-fire text-4xl text-red-600 mb-4"></i>
+                    <h3 class="font-bold text-xl mb-2">Firewall</h3>
+                    <p class="text-gray-600">Block malicious traffic and attacks</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <i class="fas fa-lock text-4xl text-green-600 mb-4"></i>
+                    <h3 class="font-bold text-xl mb-2">Login Protection</h3>
+                    <p class="text-gray-600">Brute force and 2FA protection</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <i class="fas fa-file-alt text-4xl text-blue-600 mb-4"></i>
+                    <h3 class="font-bold text-xl mb-2">File Integrity</h3>
+                    <p class="text-gray-600">Monitor file changes in real-time</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Dashboard -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Dashboard Preview</h2>
+            <div class="bg-gray-50 rounded-lg p-8 shadow-inner">
+                <div class="grid md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-green-500">
+                        <div class="text-2xl font-bold text-green-600">92%</div>
+                        <div class="text-gray-600">Security Score</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-blue-500">
+                        <div class="text-2xl font-bold text-blue-600">1,247</div>
+                        <div class="text-gray-600">Files Scanned</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-yellow-500">
+                        <div class="text-2xl font-bold text-yellow-600">3</div>
+                        <div class="text-gray-600">Warnings</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-red-500">
+                        <div class="text-2xl font-bold text-red-600">0</div>
+                        <div class="text-gray-600">Threats</div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg">
+                    <h3 class="font-bold mb-4">Recent Activity</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center text-green-600">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span>Security scan completed - No threats found</span>
+                            <span class="ml-auto text-gray-400 text-sm">2 min ago</span>
+                        </div>
+                        <div class="flex items-center text-yellow-600">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span>3 files need attention</span>
+                            <span class="ml-auto text-gray-400 text-sm">1 hour ago</span>
+                        </div>
+                        <div class="flex items-center text-blue-600">
+                            <i class="fas fa-shield-alt mr-2"></i>
+                            <span>Firewall blocked 5 suspicious IPs</span>
+                            <span class="ml-auto text-gray-400 text-sm">3 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Pricing</h2>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="bg-white rounded-lg shadow-md p-8 text-center">
+                    <h3 class="text-xl font-bold mb-4">Personal</h3>
+                    <div class="text-4xl font-bold text-purple-600 mb-6">$29</div>
+                    <ul class="text-left space-y-2 mb-6">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>1 Website</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>All Features</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>1 Year Updates</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Email Support</li>
+                    </ul>
+                    <button onclick="alert('Redirecting to Gumroad...')" class="w-full bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700">
+                        Buy Now
+                    </button>
+                </div>
+                <div class="bg-purple-600 text-white rounded-lg shadow-md p-8 text-center transform scale-105">
+                    <h3 class="text-xl font-bold mb-4">Business</h3>
+                    <div class="text-4xl font-bold mb-6">$79</div>
+                    <ul class="text-left space-y-2 mb-6">
+                        <li><i class="fas fa-check text-green-300 mr-2"></i>5 Websites</li>
+                        <li><i class="fas fa-check text-green-300 mr-2"></i>All Features</li>
+                        <li><i class="fas fa-check text-green-300 mr-2"></i>2 Years Updates</li>
+                        <li><i class="fas fa-check text-green-300 mr-2"></i>Priority Support</li>
+                    </ul>
+                    <button onclick="alert('Redirecting to Gumroad...')" class="w-full bg-white text-purple-600 py-3 rounded-lg font-bold hover:bg-gray-100">
+                        Buy Now
+                    </button>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-8 text-center">
+                    <h3 class="text-xl font-bold mb-4">Developer</h3>
+                    <div class="text-4xl font-bold text-purple-600 mb-6">$149</div>
+                    <ul class="text-left space-y-2 mb-6">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Unlimited Websites</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>All Features</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Lifetime Updates</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Phone Support</li>
+                    </ul>
+                    <button onclick="alert('Redirecting to Gumroad...')" class="w-full bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700">
+                        Buy Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2026 Security Scanner Pro. All rights reserved.</p>
+            <p class="text-gray-400 mt-2">30-Day Money Back Guarantee</p>
+        </div>
+    </footer>
+</body>
+</html>

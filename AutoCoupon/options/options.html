@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoCoupon — Opsione</title>
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --primary-light: #d1fae5;
+      --primary-bg: rgba(16, 185, 129, 0.1);
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      
+      --bg: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 40px 24px;
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-icon {
+      font-size: 2rem;
+    }
+
+    .header-content h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .header-content p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      visibility: hidden;
+      transition: var(--transition);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    /* Sections */
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+
+    .section:hover {
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .section-icon {
+      font-size: 1.25rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .section-description {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Rows */
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .row:last-child {
+      border-bottom: none;
+    }
+
+    .row-content {
+      flex: 1;
+    }
+
+    .row-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .row-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Switch */
+    .switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      background: #cbd5e1;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+
+    .switch.on {
+      background: var(--primary);
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: var(--transition);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .switch.on::after {
+      transform: translateX(22px);
+    }
+
+    /* Select */
+    .select-wrapper {
+      position: relative;
+    }
+
+    select {
+      padding: 10px 36px 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      background: var(--card);
+      cursor: pointer;
+      appearance: none;
+      min-width: 180px;
+      transition: var(--transition);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-bg);
+    }
+
+    .select-wrapper::after {
+      content: '▾';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Tags */
+    .tag-container {
+      margin-bottom: 12px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 32px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-secondary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      color: var(--text);
+      transition: var(--transition);
+    }
+
+    .tag:hover {
+      background: var(--border);
+    }
+
+    .tag-remove {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 1rem;
+      line-height: 1;
+      transition: var(--transition);
+    }
+
+    .tag-remove:hover {
+      color: var(--danger);
+    }
+
+    .tag-empty {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+
+    /* Add Row */
+    .add-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .add-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      transition: var(--transition);
+    }
+
+    .add-row input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-bg);
+    }
+
+    .add-row button {
+      padding: 10px 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .add-row button:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn-danger {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+
+    .btn-icon {
+      font-size: 1rem;
+    }
+
+    /* Import Area */
+    .import-area {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .import-area textarea {
+      width: 100%;
+      height: 120px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.8rem;
+      resize: vertical;
+      transition: var(--transition);
+    }
+
+    .import-area textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-bg);
+    }
+
+    .import-area textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Dark Mode */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --bg-secondary: #1e293b;
+        --card: #1e293b;
+        --text: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --border: #334155;
+        --border-light: #1e293b;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="header-icon">🏷️</span>
+    <div class="header-content">
+      <h1>AutoCoupon — Opsione</h1>
+      <p>Konfiguro preferencat e shtesës</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Opsionet u ruajtën me sukses!</div>
+
+  <!-- Statistikat -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📊</span>
+      <div>
+        <div class="section-title">Statistikat</div>
+        <div class="section-description">Përmbledhje e përdorimit</div>
+      </div>
+    </div>
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-value" id="statApplied">0</div>
+        <div class="stat-label">Kupona të aplikuar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSuccess">0%</div>
+        <div class="stat-label">Shkalla e suksesit</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statDomains">0</div>
+        <div class="stat-label">Domain-e të vizituara</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statHistory">0</div>
+        <div class="stat-label">Në historik</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-Apply -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚡</span>
+      <div>
+        <div class="section-title">Auto-Apply</div>
+        <div class="section-description">Kontrollo sjelljen e aplikimit automatik</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-label">Apliko kuponin automatikisht</div>
+        <div class="row-hint">Kur gjendet një kupon, aplikohet menjëherë në fushën e kuponave</div>
+      </div>
+      <div class="switch on" id="autoApplySwitch" data-setting="autoApply"></div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-label">Njoftimet</div>
+        <div class="row-hint">Shfaq njoftim vizual kur aplikohet me sukses një kupon</div>
+      </div>
+      <div class="switch on" id="notifSwitch" data-setting="notifications"></div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-label">Skanim automatik i faqes</div>
+        <div class="row-hint">Kërko kuponat menjëherë kur hapet faqja</div>
+      </div>
+      <div class="switch on" id="autoScanSwitch" data-setting="autoScan"></div>
+    </div>
+  </div>
+
+  <!-- Lista e Zezë -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🚫</span>
+      <div>
+        <div class="section-title">Lista e Zezë</div>
+        <div class="section-description">Domain-et këtu nuk do të verifikohen për kupona</div>
+      </div>
+    </div>
+    <div class="tag-container">
+      <div class="tag-list" id="blacklistTags">
+        <span class="tag-empty">Asnjë domain në listën e zezë</span>
+      </div>
+    </div>
+    <div class="add-row">
+      <input type="text" id="blacklistInput" placeholder="shembull.com">
+      <button id="addBlacklistBtn">Shto</button>
+    </div>
+  </div>
+
+  <!-- Domain-e të Besuara -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✅</span>
+      <div>
+        <div class="section-title">Domain-e të Besuara</div>
+        <div class="section-description">Këto domain-e do të verifikohen automatikisht</div>
+      </div>
+    </div>
+    <div class="tag-container">
+      <div class="tag-list" id="trustedTags"></div>
+    </div>
+    <div class="add-row">
+      <input type="text" id="trustedInput" placeholder="shembull.com">
+      <button id="addTrustedBtn">Shto</button>
+    </div>
+  </div>
+
+  <!-- Tema & Burimi -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎨</span>
+      <div>
+        <div class="section-title">Tema & Burimi</div>
+        <div class="section-description">Personalizo pamjen dhe burimin e kuponave</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-label">Tema</div>
+        <div class="row-hint">Zgjidh ndërfaqen e errët ose të ndritshme</div>
+      </div>
+      <div class="select-wrapper">
+        <select id="themeSelect" data-setting="theme">
+          <option value="light">☀️ Light</option>
+          <option value="dark">🌙 Dark</option>
+          <option value="system">💻 Sistemi</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-label">Burimi i kuponave</div>
+        <div class="row-hint">Zgjidh burimin kryesor të kuponave</div>
+      </div>
+      <div class="select-wrapper">
+        <select id="sourceSelect" data-setting="source">
+          <option value="auto">🔄 Auto (të gjitha burimet)</option>
+          <option value="database">💾 Database e brendshme</option>
+          <option value="page">📄 Vetëm nga faqja</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-content">
+        <div class="row-label">Gjuha</div>
+        <div class="row-hint">Zgjidh gjuhën e ndërfaqes</div>
+      </div>
+      <div class="select-wrapper">
+        <select id="languageSelect" data-setting="language">
+          <option value="sq">🇦🇱 Shqip</option>
+          <option value="en">🇬🇧 Anglisht</option>
+          <option value="de">🇩🇪 Gjermanisht</option>
+          <option value="fr">🇫🇷 Francisht</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menaxhimi i të Dhënave -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">💾</span>
+      <div>
+        <div class="section-title">Menaxhimi i të Dhënave</div>
+        <div class="section-description">Eksporto, importo ose rivendos të dhënat</div>
+      </div>
+    </div>
+    
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="exportBtn">
+        <span class="btn-icon">📤</span>
+        <span>Eksporto JSON</span>
+      </button>
+      <button class="btn btn-secondary" id="backupBtn">
+        <span class="btn-icon">💾</span>
+        <span>Krijo Backup</span>
+      </button>
+    </div>
+
+    <div class="import-area">
+      <textarea id="importText" placeholder="Ngjit JSON këtu për import..."></textarea>
+      <button class="btn btn-primary" id="importBtn" style="margin-top: 10px;">
+        <span class="btn-icon">📥</span>
+        <span>Importo</span>
+      </button>
+    </div>
+
+    <div class="btn-row" style="margin-top: 16px;">
+      <button class="btn btn-danger" id="resetAllBtn">
+        <span class="btn-icon">🗑️</span>
+        <span>Rivendos Gjithçka</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>AutoCoupon v1.0.0 — Krijuar me ❤️</p>
+    <p style="margin-top: 8px;">
+      <a href="#" id="privacyLink">Politika e Privatësisë</a> • 
+      <a href="#" id="helpLink">Ndihmë</a>
+    </p>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

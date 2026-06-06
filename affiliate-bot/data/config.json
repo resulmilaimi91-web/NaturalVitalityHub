@@ -1,0 +1,19 @@
+{
+  "paypal_email": "resul.paypal@gmail.com",
+  "niche": "health-supplements",
+  "content_schedule": {
+    "articles_per_week": 3,
+    "social_posts_per_product": 5
+  },
+  "payment_method": "paysera",
+  "paysera_email": "resul.paypal@gmail.com",
+  "bitly_api_token": "",
+  "blog_platform": "blogger",
+  "blogger_api_key": "",
+  "blog_id": "",
+  "youtube_api_key": "",
+  "twitter_api_key": "",
+  "output_dir": "output",
+  "language": "sq",
+  "min_commission_rate": 10
+}
