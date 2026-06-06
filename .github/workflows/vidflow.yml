@@ -21,6 +21,17 @@ jobs:
           python-version: "3.11"
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: pip install -q google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client gtts pillow moviepy requests
+      - run: |
+          mkdir -p images
+          for url in \
+            https://images.unsplash.com/photo-1559757175-5700dde675bc?w=1920 \
+            https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1920 \
+            https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1920 \
+            https://images.unsplash.com/photo-1519823551278-64ac52734f5c?w=1920 \
+            https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1920; do
+            curl -sL "$url" -o "images/bg_$(basename $RANDOM).jpg" 2>/dev/null || true
+          done
+          ls images/ 2>/dev/null || echo "No images downloaded"
       - run: echo "$CLIENT" | base64 --decode > client_secret.json 2>/dev/null || true
         env:
           CLIENT: ${{ secrets.CLIENT_SECRET_JSON }}

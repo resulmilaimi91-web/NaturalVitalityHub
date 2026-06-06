@@ -1,24 +1,50 @@
 #!/usr/bin/env python3
-import json, os, sys, tempfile, random
+import json, os, sys, tempfile, random, glob
 from gtts import gTTS
 from moviepy import *
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+BASE = Path(os.path.dirname(os.path.abspath(__file__)))
+IMAGES_DIR = BASE / "images"
+os.makedirs(IMAGES_DIR, exist_ok=True)
 
 THEMES = [
-    {"bg1": (25, 25, 112), "bg2": (0, 0, 0), "accent": (255, 215, 0), "text": (255, 255, 255)},
-    {"bg1": (0, 100, 80), "bg2": (0, 0, 0), "accent": (0, 255, 200), "text": (255, 255, 255)},
-    {"bg1": (139, 0, 0), "bg2": (0, 0, 0), "accent": (255, 200, 0), "text": (255, 255, 255)},
-    {"bg1": (0, 0, 128), "bg2": (25, 25, 112), "accent": (100, 200, 255), "text": (255, 255, 255)},
-    {"bg1": (75, 0, 130), "bg2": (0, 0, 0), "accent": (255, 100, 255), "text": (255, 255, 255)},
+    {"accent": (255, 215, 0), "text": (255, 255, 255), "shadow": True, "fill": (0, 0, 0, 160)},
+    {"accent": (0, 255, 200), "text": (255, 255, 255), "shadow": True, "fill": (0, 0, 0, 150)},
+    {"accent": (255, 200, 0), "text": (255, 255, 255), "shadow": True, "fill": (0, 0, 0, 140)},
+    {"accent": (100, 200, 255), "text": (255, 255, 255), "shadow": True, "fill": (0, 0, 0, 155)},
+    {"accent": (255, 100, 255), "text": (255, 255, 255), "shadow": True, "fill": (0, 0, 0, 145)},
 ]
 
-def draw_gradient(draw, size, color1, color2):
-    for y in range(size[1]):
-        ratio = y / size[1]
-        r = int(color1[0] * (1 - ratio) + color2[0] * ratio)
-        g = int(color1[1] * (1 - ratio) + color2[1] * ratio)
-        b = int(color1[2] * (1 - ratio) + color2[2] * ratio)
-        draw.line([(0, y), (size[0], y)], fill=(r, g, b))
+def create_default_bg(size=(1920, 1080)):
+    img = Image.new("RGB", size, (20, 30, 50))
+    draw = ImageDraw.Draw(img)
+    for i in range(30):
+        x, y = random.randint(0, size[0]), random.randint(0, size[1])
+        r = random.randint(30, 100)
+        c = (random.randint(30, 80), random.randint(50, 120), random.randint(60, 130))
+        draw.ellipse([x-r, y-r, x+r, y+r], fill=c, outline=None)
+    return img.filter(ImageFilter.GaussianBlur(20))
+
+def get_background_images():
+    exts = ("*.jpg", "*.jpeg", "*.png", "*.webp")
+    files = []
+    for ext in exts:
+        files.extend(glob.glob(os.path.join(IMAGES_DIR, ext)))
+        files.extend(glob.glob(os.path.join(IMAGES_DIR, ext.upper())))
+    return sorted(set(files))
+
+def load_bg_image(size=(1920, 1080)):
+    images = get_background_images()
+    if images:
+        path = random.choice(images)
+        try:
+            bg = Image.open(path).convert("RGB")
+            bg = bg.resize(size, Image.LANCZOS)
+            return bg
+        except:
+            pass
+    return create_default_bg()
 
 def wrap_text(text, max_chars=25):
     words = text.split()
@@ -35,9 +61,10 @@ def wrap_text(text, max_chars=25):
 def create_slide(text, theme=None, duration=5, size=(1920, 1080)):
     if theme is None:
         theme = random.choice(THEMES)
-    img = Image.new("RGB", size)
+    img = load_bg_image(size)
+    overlay = Image.new("RGBA", size, theme["fill"])
+    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
     draw = ImageDraw.Draw(img)
-    draw_gradient(draw, size, theme["bg1"], theme["bg2"])
 
     lines = wrap_text(text, 30)
     font_large = 80
@@ -54,16 +81,11 @@ def create_slide(text, theme=None, duration=5, size=(1920, 1080)):
         max_line_w = max(max_line_w, w)
     box_w = min(max_line_w + box_pad * 2, size[0] - 200)
 
-    box_y = start_y - box_pad
-    box_h = total_h + box_pad * 2
-    overlay = Image.new("RGBA", (box_w, box_h), (0, 0, 0, 120))
-    img.paste(overlay, (box_x, box_y), overlay)
-
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font_size=font_large)
         x = box_x + (box_w - (bbox[2] - bbox[0])) // 2
         y = start_y + i * line_spacing
-        draw.text((x + 3, y + 3), line, fill=(0, 0, 0, 180), font_size=font_large)
+        draw.text((x + 3, y + 3), line, fill=(0, 0, 0, 200), font_size=font_large)
         draw.text((x, y), line, fill=theme["text"], font_size=font_large)
 
     accent_y = start_y + len(lines) * line_spacing + 20
