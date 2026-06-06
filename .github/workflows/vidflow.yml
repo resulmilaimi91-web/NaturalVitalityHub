@@ -9,7 +9,7 @@ on:
         type: string
       privacy:
         type: choice
-        default: unlisted
+        default: public
         options: [unlisted, public, private]
 permissions:
   contents: write
@@ -44,9 +44,9 @@ jobs:
           PROD="${{ github.event.inputs.product }}"
           PRIV="${{ github.event.inputs.privacy }}"
           if [ -z "$PROD" ]; then
-            python youtube_content_automation.py generate-auto "${PRIV:-unlisted}"
+            python youtube_content_automation.py generate-auto "${PRIV:-public}"
           else
-            python youtube_content_automation.py generate-auto "$PROD" "${PRIV:-unlisted}"
+            python youtube_content_automation.py generate-auto "$PROD" "${PRIV:-public}"
           fi
       - name: Save published tracker
         run: |

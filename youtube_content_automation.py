@@ -644,7 +644,7 @@ def main():
         cmd_generate_single(product)
     elif cmd in ("generate-auto", "genauto"):
         product = None
-        privacy = "unlisted"
+        privacy = "public"
         if len(sys.argv) > 2:
             arg1 = sys.argv[2]
             if arg1 in ("public", "unlisted", "private"):
