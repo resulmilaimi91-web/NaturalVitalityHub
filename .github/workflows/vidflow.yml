@@ -2,6 +2,11 @@ name: VidFlow
 on:
   workflow_dispatch:
     inputs:
+      product:
+        description: Product name
+        required: false
+        default: Provadent
+        type: string
       privacy:
         type: choice
         default: unlisted
@@ -22,11 +27,7 @@ jobs:
       - run: echo "$TOKEN" | base64 --decode > token.pickle 2>/dev/null || true
         env:
           TOKEN: ${{ secrets.TOKEN_PICKLE }}
-      - run: python youtube_content_automation.py generate "Provadent"
-      - run: python -u .github/workflows/makevideo.py
-      - run: python -u .github/workflows/doupload.py
-        env:
-          PRIVACY: ${{ github.event.inputs.privacy || 'unlisted' }}
+      - run: python youtube_content_automation.py generate-auto "${{ github.event.inputs.product || 'Provadent' }}" ${{ github.event.inputs.privacy || 'unlisted' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

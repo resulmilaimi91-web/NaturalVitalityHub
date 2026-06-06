@@ -431,7 +431,7 @@ def cmd_generate_all():
     print(f" All packages saved to: {SCRIPTS_DIR}")
     print("=" * 60)
 
-def cmd_generate_single(product_name=None):
+def cmd_generate_single(product_name=None, auto_yes=False, auto_privacy="unlisted"):
     if not product_name:
         product_name = input("Product name to generate: ").strip()
     
@@ -456,13 +456,21 @@ def cmd_generate_single(product_name=None):
     print(f"  Script preview (first 200 chars):")
     print(f"  {pkg['script'][:200]}...\n")
     
-    create = input("Create video now? (yes/no): ").lower()
+    if auto_yes:
+        create = "yes"
+    else:
+        create = input("Create video now? (yes/no): ").lower()
     if create in ("yes", "y", "po"):
         video_path = create_video_from_package(pkg)
         if video_path:
-            upload = input("Upload to YouTube? (yes/no): ").lower()
-            if upload in ("yes", "y", "po"):
-                privacy = input("Privacy (public/unlisted/private) [public]: ").strip() or "public"
+            if auto_yes:
+                upload = "yes"
+                privacy = auto_privacy
+            else:
+                upload = input("Upload to YouTube? (yes/no): ").lower()
+                if upload in ("yes", "y", "po"):
+                    privacy = input("Privacy (public/unlisted/private) [public]: ").strip() or "public"
+            if auto_yes or upload in ("yes", "y", "po"):
                 upload_video_to_youtube(video_path, pkg, privacy)
 
 def cmd_list_products():
@@ -602,6 +610,10 @@ def main():
     elif cmd == "generate":
         product = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
         cmd_generate_single(product)
+    elif cmd in ("generate-auto", "genauto"):
+        product = sys.argv[2] if len(sys.argv) > 2 else "Provadent"
+        privacy = sys.argv[3] if len(sys.argv) > 3 else "unlisted"
+        cmd_generate_single(product, auto_yes=True, auto_privacy=privacy)
     elif cmd == "schedule":
         cmd_schedule()
     elif cmd == "export":
