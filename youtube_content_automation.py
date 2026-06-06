@@ -90,10 +90,9 @@ def generate_youtube_package(product):
     script = "\n\n".join(content["sections"])
     description = f"""{name} Review 2026 - Does It Really Work? Honest Results
 
-In this video, we take an honest look at {name} - one of the most popular supplements in 2026.
+👇 OFFICIAL WEBSITE ➡ {url}
 
-👉 Get {name} Official with Discount:
-{url}
+In this video, we take an honest look at {name}.
 
 ⚠️ Important: Only buy from the official website to avoid counterfeit products.
 
