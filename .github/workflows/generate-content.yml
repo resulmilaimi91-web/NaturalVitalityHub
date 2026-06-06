@@ -1,0 +1,52 @@
+name: Generate YouTube Content
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      product:
+        description: 'Specific product to generate (leave empty for all)'
+        required: false
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install gtts pillow moviepy requests schedule
+      
+      - name: Generate content packages
+        run: |
+          python youtube_content_automation.py all
+      
+      - name: Upload generated content
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-scripts
+          path: output/scripts/
+          retention-days: 7
+      
+      - name: Show summary
+        run: |
+          echo "## Content Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Scripts generated at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- Total packages: $(ls -la output/scripts/ | grep -c ^d)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Product Packages:" >> $GITHUB_STEP_SUMMARY
+          for dir in output/scripts/*/; do
+            name=$(basename "$dir")
+            title=$(cat "$dir/title.txt" 2>/dev/null || echo "N/A")
+            echo "- **${name}**: ${title}" >> $GITHUB_STEP_SUMMARY
+          done
