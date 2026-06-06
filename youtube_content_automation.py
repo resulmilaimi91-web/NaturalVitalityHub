@@ -92,7 +92,7 @@ def generate_youtube_package(product):
 
 In this video, we take an honest look at {name} - one of the most popular supplements in 2026.
 
-👉 <a href="{url}">Get {name} Official with Discount →</a>
+👉 Get {name} Official with Discount → {url}
 
 ⚠️ Important: Only buy from the official website to avoid counterfeit products.
 
