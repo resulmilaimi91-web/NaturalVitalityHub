@@ -73,7 +73,7 @@ def extract_bullets(text, max_bullets=3):
                 bullets.append(chunk)
     return bullets[:max_bullets]
 
-def create_product_card(product_name, niche="general-health", size=(1920, 1080)):
+def create_product_card(product_name, niche="general-health", size=(1920, 1080), affiliate_url=""):
     color = NICHE_COLORS.get(niche, "#20B2AA")
     r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
     bg = Image.new("RGB", size, (15, 20, 35))
@@ -127,6 +127,18 @@ def create_product_card(product_name, niche="general-health", size=(1920, 1080))
         dx = size[0] // 2 - 120 + j * 60
         draw.ellipse([dx, dots_y, dx + 20, dots_y + 20], fill=color)
 
+    buy_text = "👇 CLICK LINK IN DESCRIPTION TO BUY 👇"
+    bbox = draw.textbbox((0, 0), buy_text, font_size=40)
+    btx = (size[0] - (bbox[2] - bbox[0])) // 2
+    draw.text((btx + 2, dots_y + 60 + 2), buy_text, fill=(0, 0, 0, 200), font_size=40)
+    draw.text((btx, dots_y + 60), buy_text, fill=color, font_size=40)
+
+    if affiliate_url:
+        short_url = affiliate_url[:50] + "..." if len(affiliate_url) > 50 else affiliate_url
+        bbox = draw.textbbox((0, 0), short_url, font_size=28)
+        ux = (size[0] - (bbox[2] - bbox[0])) // 2
+        draw.text((ux, dots_y + 120), short_url, fill="#AAAAAA", font_size=28)
+
     path = os.path.join(tempfile.gettempdir(), f"product_card_{random.randint(0,999999)}.png")
     bg.save(path)
     return path
@@ -176,6 +188,12 @@ def create_slide(text, theme=None, duration=5, size=(1920, 1080), product_card_p
         except:
             pass
 
+    link_text = "👇 BUY NOW - Link in Description"
+    bbox = draw.textbbox((0, 0), link_text, font_size=30)
+    lx = (size[0] - (bbox[2] - bbox[0])) // 2
+    ly = size[1] - 60
+    draw.text((lx, ly), link_text, fill=theme["text"], font_size=30)
+
     slide_path = os.path.join(tempfile.gettempdir(), f"slide_{random.randint(0,999999)}.png")
     img.save(slide_path)
     return slide_path
@@ -186,14 +204,14 @@ def text_to_speech(text, lang="en", slow=False):
     tts.save(path)
     return path
 
-def create_video_from_script(title="Video Title", script_sections=None, desc="", hashtags="", output_dir=None, lang="en", product_name="", niche="general-health"):
+def create_video_from_script(title="Video Title", script_sections=None, desc="", hashtags="", output_dir=None, lang="en", product_name="", niche="general-health", affiliate_url=""):
     if script_sections is None:
         script_sections = [{"text": "Hello World", "duration": 5}]
     if output_dir is None:
         output_dir = tempfile.gettempdir()
 
     print("Generating product card...")
-    product_card_path = create_product_card(product_name or title, niche)
+    product_card_path = create_product_card(product_name or title, niche, affiliate_url=affiliate_url)
 
     print("Generating audio...")
     all_text = " ".join(s["text"] for s in script_sections)

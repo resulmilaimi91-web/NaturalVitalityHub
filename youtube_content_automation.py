@@ -403,7 +403,8 @@ def create_video_from_package(pkg, output_name=None):
             output_dir=str(VIDEO_DIR),
             lang="en",
             product_name=pkg.get("product", ""),
-            niche=pkg.get("niche", "general-health")
+            niche=pkg.get("niche", "general-health"),
+            affiliate_url=pkg.get("affiliate_url", "")
         )
         print(f"  [OK] Video created: {result}")
         return result
