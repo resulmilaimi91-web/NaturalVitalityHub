@@ -413,6 +413,32 @@ def create_video_from_package(pkg, output_name=None):
         print("  [i] Script and description saved - you can create video manually.")
         return None
 
+def post_pin_comment(video_id, message):
+    try:
+        from googleapiclient.discovery import build
+        import pickle
+        token_file = BASE_DIR / "token.pickle"
+        if not token_file.exists():
+            print("  [i] No token.pickle, skipping comment")
+            return
+        with open(token_file, "rb") as f:
+            creds = pickle.load(f)
+        youtube = build("youtube", "v3", credentials=creds)
+        body = {
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {
+                    "snippet": {"textOriginal": message}
+                }
+            }
+        }
+        comment = youtube.commentThreads().insert(part="snippet", body=body).execute()
+        cid = comment["id"]
+        youtube.comments().setModerationStatus(id=cid, moderationStatus="published").execute()
+        print(f"  [OK] Pinned comment posted")
+    except Exception as e:
+        print(f"  [i] Comment skipped: {e}")
+
 def upload_video_to_youtube(video_path, pkg, privacy="public"):
     sys.path.insert(0, str(BASE_DIR))
     try:
@@ -425,6 +451,9 @@ def upload_video_to_youtube(video_path, pkg, privacy="public"):
             privacy
         )
         print(f"  [OK] Uploaded: {url}")
+        vid = url.split("/")[-1]
+        msg = f"👇 GET {pkg['product'].upper()} HERE:\n{pkg.get('affiliate_url', '')}\n\n✅ Official Website - Best Price"
+        post_pin_comment(vid, msg)
         return url
     except Exception as e:
         print(f"  [X] Upload failed: {e}")
