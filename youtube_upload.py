@@ -9,7 +9,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.force-ssl"]
 BASE = os.path.dirname(os.path.abspath(__file__))
 CLIENT_SECRET_FILE = os.path.join(BASE, "client_secret.json")
 TOKEN_FILE = os.path.join(BASE, "token.pickle")
