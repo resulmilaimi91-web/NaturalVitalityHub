@@ -1,0 +1,35 @@
+name: VidFlow
+on:
+  workflow_dispatch:
+    inputs:
+      privacy:
+        type: choice
+        default: unlisted
+        options: [unlisted, public, private]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: pip install -q google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client gtts pillow moviepy requests
+      - run: echo "$CLIENT" | base64 --decode > client_secret.json 2>/dev/null || true
+        env:
+          CLIENT: ${{ secrets.CLIENT_SECRET_JSON }}
+      - run: echo "$TOKEN" | base64 --decode > token.pickle 2>/dev/null || true
+        env:
+          TOKEN: ${{ secrets.TOKEN_PICKLE }}
+      - run: python youtube_content_automation.py generate "Provadent"
+      - run: python -u .github/workflows/makevideo.py
+      - run: python -u .github/workflows/doupload.py
+        env:
+          PRIVACY: ${{ github.event.inputs.privacy || 'unlisted' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: out-${{ github.run_id }}
+          path: output/
+          retention-days: 3
