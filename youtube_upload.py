@@ -10,8 +10,9 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
-CLIENT_SECRET_FILE = r"D:\ANDROID\opencode\client_secret.json"
-TOKEN_FILE = r"D:\ANDROID\opencode\token.pickle"
+BASE = os.path.dirname(os.path.abspath(__file__))
+CLIENT_SECRET_FILE = os.path.join(BASE, "client_secret.json")
+TOKEN_FILE = os.path.join(BASE, "token.pickle")
 
 def get_authenticated_service():
     creds = None
