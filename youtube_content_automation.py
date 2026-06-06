@@ -92,7 +92,8 @@ def generate_youtube_package(product):
 
 In this video, we take an honest look at {name} - one of the most popular supplements in 2026.
 
-👉 Get {name} Official with Discount → {url}
+👉 Get {name} Official with Discount:
+{url}
 
 ⚠️ Important: Only buy from the official website to avoid counterfeit products.
 
@@ -401,7 +402,9 @@ def create_video_from_package(pkg, output_name=None):
             desc=pkg["description"],
             hashtags=" ".join(pkg["tags"][:5]),
             output_dir=str(VIDEO_DIR),
-            lang="en"
+            lang="en",
+            product_name=pkg.get("product", ""),
+            niche=pkg.get("niche", "general-health")
         )
         print(f"  [OK] Video created: {result}")
         return result
