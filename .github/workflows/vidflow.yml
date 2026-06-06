@@ -5,7 +5,7 @@ on:
       product:
         description: Product name
         required: false
-        default: Provadent
+        default: ''
         type: string
       privacy:
         type: choice
@@ -27,7 +27,14 @@ jobs:
       - run: echo "$TOKEN" | base64 --decode > token.pickle 2>/dev/null || true
         env:
           TOKEN: ${{ secrets.TOKEN_PICKLE }}
-      - run: python youtube_content_automation.py generate-auto "${{ github.event.inputs.product || 'Provadent' }}" ${{ github.event.inputs.privacy || 'unlisted' }}
+      - run: |
+          PROD="${{ github.event.inputs.product }}"
+          PRIV="${{ github.event.inputs.privacy }}"
+          if [ -z "$PROD" ]; then
+            python youtube_content_automation.py generate-auto "${PRIV:-unlisted}"
+          else
+            python youtube_content_automation.py generate-auto "$PROD" "${PRIV:-unlisted}"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

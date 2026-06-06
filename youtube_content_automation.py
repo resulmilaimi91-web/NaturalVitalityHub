@@ -16,11 +16,31 @@ except ImportError:
 
 BASE_DIR = Path(__file__).parent
 TRACKING_FILE = BASE_DIR / "affiliate-bot" / "data" / "tracking.json"
+PUBLISHED_FILE = BASE_DIR / "published_products.json"
 OUTPUT_DIR = BASE_DIR / "output"
 VIDEO_DIR = OUTPUT_DIR / "videos"
 SCRIPTS_DIR = OUTPUT_DIR / "scripts"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 os.makedirs(SCRIPTS_DIR, exist_ok=True)
+
+def load_published():
+    if not PUBLISHED_FILE.exists():
+        return {}
+    with open(PUBLISHED_FILE, "r") as f:
+        return json.load(f)
+
+def save_published(data):
+    with open(PUBLISHED_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def get_next_unpublished():
+    products = load_products()
+    published = load_published()
+    for p in products:
+        name = p["produkti"]
+        if name not in published:
+            return p
+    return None
 
 PRODUCT_NICHES = {
     "PrimeBiome": "gut-health",
@@ -471,7 +491,14 @@ def cmd_generate_single(product_name=None, auto_yes=False, auto_privacy="unliste
                 if upload in ("yes", "y", "po"):
                     privacy = input("Privacy (public/unlisted/private) [public]: ").strip() or "public"
             if auto_yes or upload in ("yes", "y", "po"):
-                upload_video_to_youtube(video_path, pkg, privacy)
+                url = upload_video_to_youtube(video_path, pkg, privacy)
+                if url:
+                    published = load_published()
+                    published[product["produkti"]] = {"url": url, "date": datetime.now().isoformat(), "title": pkg["title"], "niche": pkg["niche"]}
+                    save_published(published)
+                    remaining = len(load_products()) - len(published)
+                    print(f"  Published: {product['produkti']} -> {url}")
+                    print(f"  Remaining unpublished: {remaining}")
 
 def cmd_list_products():
     products = load_products()
@@ -488,10 +515,13 @@ def cmd_list_products():
             niches[niche] = []
         niches[niche].append(p["produkti"])
     
+    published = load_published()
     for niche, items in sorted(niches.items()):
-        print(f"  [{niche}] ({len(items)})")
+        pub_count = sum(1 for i in items if i in published)
+        print(f"  [{niche}] ({len(items)}, {pub_count} published)")
         for item in items[:5]:
-            print(f"    - {item}")
+            status = "✓" if item in published else " "
+            print(f"    [{status}] {item}")
         if len(items) > 5:
             print(f"    ... and {len(items)-5} more")
         print()
@@ -582,6 +612,8 @@ def cmd_dashboard():
     print(f" Channel: https://www.youtube.com/@NaturalVitalityHub-y4d")
     print(f" PayPal: resul.paypal@gmail.com")
     print(f" Digistore24 Products: {total}")
+    published = load_published()
+    print(f" Published: {len(published)} / {total}")
     print(f"{'='*60}\n")
     print(f" Products by Category:")
     for niche, count in sorted(niches.items(), key=lambda x: -x[1]):
@@ -592,6 +624,7 @@ def cmd_dashboard():
     print(f"  python {__file__} all        - Generate all video packages")
     print(f"  python {__file__} list       - List all products")
     print(f"  python {__file__} generate   - Generate single product")
+    print(f"  python {__file__} generate-auto - Auto-pick next & publish")
     print(f"  python {__file__} schedule   - Start 24/7 scheduler")
     print(f"  python {__file__} export     - Export products to CSV")
     print(f"{'='*60}")
@@ -611,8 +644,24 @@ def main():
         product = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
         cmd_generate_single(product)
     elif cmd in ("generate-auto", "genauto"):
-        product = sys.argv[2] if len(sys.argv) > 2 else "Provadent"
-        privacy = sys.argv[3] if len(sys.argv) > 3 else "unlisted"
+        product = None
+        privacy = "unlisted"
+        if len(sys.argv) > 2:
+            arg1 = sys.argv[2]
+            if arg1 in ("public", "unlisted", "private"):
+                privacy = arg1
+            else:
+                product = arg1
+                if len(sys.argv) > 3 and sys.argv[3] in ("public", "unlisted", "private"):
+                    privacy = sys.argv[3]
+        if not product:
+            next_p = get_next_unpublished()
+            if not next_p:
+                print("[OK] All products published! Resetting tracker for re-publish.")
+                save_published({})
+                next_p = get_next_unpublished()
+            product = next_p["produkti"] if next_p else "Provadent"
+        print(f"[Auto] Product: {product} (privacy: {privacy})")
         cmd_generate_single(product, auto_yes=True, auto_privacy=privacy)
     elif cmd == "schedule":
         cmd_schedule()
