@@ -37,3 +37,10 @@ Thumbs.db
 
 # Temp scripts
 _check*.py
+
+# Cookie exports (session data - never commit)
+cookies.txt
+cookies_minimal.txt
+
+# Generated CSV exports
+digistore24-products.csv
