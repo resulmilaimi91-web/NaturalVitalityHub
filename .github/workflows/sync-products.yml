@@ -1,0 +1,26 @@
+name: Sync Digistore24 Products
+on:
+  push:
+    paths:
+      - "digistore24-products.csv"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/sync-digistore-products.py
+      - run: |
+          if [ -f "affiliate-bot/data/tracking.json" ]; then
+            git config user.name "NaturalVitalityHub Bot"
+            git config user.email "bot@naturalvitalityhub.com"
+            git add affiliate-bot/data/tracking.json
+            git add scripts/sync-digistore-products.py
+            git diff --cached --quiet || git commit -m "auto-sync products from CSV"
+            git push
+          fi
