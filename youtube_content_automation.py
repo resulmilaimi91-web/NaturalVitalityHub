@@ -38,7 +38,9 @@ def get_next_unpublished():
     published = load_published()
     for p in products:
         name = p["produkti"]
-        if name not in published:
+        # Match if name appears in any published key (handles renamed/reformatted names)
+        is_published = any(name.lower() in k.lower() or k.lower() in name.lower() for k in published)
+        if not is_published:
             return p
     return None
 
@@ -424,10 +426,8 @@ def post_pin_comment(video_id, message):
                 }
             }
         }
-        comment = youtube.commentThreads().insert(part="snippet", body=body).execute()
-        cid = comment["id"]
-        youtube.comments().setModerationStatus(id=cid, moderationStatus="published").execute()
-        print(f"  [OK] Pinned comment posted")
+        youtube.commentThreads().insert(part="snippet", body=body).execute()
+        print(f"  [OK] Comment posted (pinning not supported by YouTube API)")
     except Exception as e:
         print(f"  [i] Comment skipped: {e}")
 

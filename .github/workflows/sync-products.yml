@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - "digistore24-products.csv"
+  schedule:
+    - cron: "0 14 * * *"
   workflow_dispatch:
 permissions:
   contents: write
@@ -14,13 +16,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python scripts/sync-digistore-products.py
+      - run: pip install requests
+      - name: Fetch via API (if key exists)
+        run: |
+          if [ -n "${{ secrets.DIGISTORE24_API_KEY }}" ]; then
+            python scripts/fetch-digistore-products.py
+          fi
+        env:
+          DIGISTORE24_API_KEY: ${{ secrets.DIGISTORE24_API_KEY }}
+      - name: Parse CSV (if exists)
+        run: |
+          if [ -f "digistore24-products.csv" ]; then
+            python scripts/sync-digistore-products.py
+          fi
       - run: |
           if [ -f "affiliate-bot/data/tracking.json" ]; then
             git config user.name "NaturalVitalityHub Bot"
             git config user.email "bot@naturalvitalityhub.com"
             git add affiliate-bot/data/tracking.json
-            git add scripts/sync-digistore-products.py
-            git diff --cached --quiet || git commit -m "auto-sync products from CSV"
+            git diff --cached --quiet || git commit -m "auto-sync products"
             git push
           fi
