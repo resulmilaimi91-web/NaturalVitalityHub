@@ -10,7 +10,7 @@ os.makedirs(IMAGES_DIR, exist_ok=True)
 
 sys.path.insert(0, str(BASE))
 try:
-    from gemini_image_generator import get_image, find_local_gemini_image, NICHE_PROMPTS
+    from gemini_image_generator import get_bg_image, find_niche_image, NICHE_PALETTES
     GEMINI_AVAILABLE = True
 except:
     GEMINI_AVAILABLE = False
@@ -58,15 +58,14 @@ def get_background_images():
 
 def load_bg_image(size=(1920, 1080), niche="general-health"):
     if GEMINI_AVAILABLE:
-        local = find_local_gemini_image(niche)
+        local = find_niche_image(niche)
         if local:
             try:
                 bg = Image.open(local).convert("RGB")
                 return bg.resize(size, Image.LANCZOS)
             except:
                 pass
-        prompt = NICHE_PROMPTS.get(niche, NICHE_PROMPTS["general-health"])
-        img = get_image(prompt, niche, "landscape" if size[0] > size[1] else "portrait")
+        img = get_bg_image(size, niche)
         if img:
             return img.resize(size, Image.LANCZOS)
     images = get_background_images()
