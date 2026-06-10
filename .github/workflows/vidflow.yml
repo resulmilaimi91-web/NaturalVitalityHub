@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
-          pip install -q google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client gtts pillow moviepy requests google-genai
+          pip install -q google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client gtts pillow moviepy requests google-genai beautifulsoup4
 
       - name: Generate Gemini images for all niches (fallback to stock)
         run: |

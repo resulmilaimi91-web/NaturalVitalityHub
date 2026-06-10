@@ -15,6 +15,12 @@ try:
 except:
     GEMINI_AVAILABLE = False
 
+try:
+    from product_image_fetcher import get_product_image
+    PRODUCT_IMAGES_AVAILABLE = True
+except:
+    PRODUCT_IMAGES_AVAILABLE = False
+
 THEMES = [
     {"accent": "#FFD700", "text": "#FFFFFF", "bar": "#FFD700", "fill": (0, 0, 0, 120)},
     {"accent": "#00FFC8", "text": "#FFFFFF", "bar": "#00FFC8", "fill": (0, 0, 0, 110)},
@@ -182,6 +188,36 @@ def create_product_card(product_name, niche="general-health", size=(1920, 1080),
     
     draw = ImageDraw.Draw(bg)
     
+    prod_img_path = None
+    if PRODUCT_IMAGES_AVAILABLE and affiliate_url:
+        prod_img_path = get_product_image(product_name, affiliate_url)
+    
+    if prod_img_path and os.path.exists(prod_img_path):
+        try:
+            prod_img = Image.open(prod_img_path).convert("RGBA")
+            pw, ph = prod_img.size
+            max_w, max_h = 350, 350
+            scale = min(max_w / pw, max_h / ph, 1.0)
+            pw, ph = int(pw * scale), int(ph * scale)
+            prod_img = prod_img.resize((pw, ph), Image.LANCZOS)
+            shadow_img = Image.new("RGBA", (pw + 20, ph + 20), (0, 0, 0, 80))
+            shadow_img = shadow_img.filter(ImageFilter.GaussianBlur(8))
+            sx = (size[0] - shadow_img.width) // 2
+            sy = size[1] // 2 - shadow_img.height // 2 - 20
+            bg = Image.alpha_composite(bg.convert("RGBA"), shadow_img)
+            bg.paste(shadow_img, (sx, sy), shadow_img)
+            px = (size[0] - pw) // 2
+            py = size[1] // 2 - ph // 2 - 20
+            bg.paste(prod_img, (px, py), prod_img)
+            bg = bg.convert("RGBA")
+            name_y = size[1] // 2 + 200
+        except:
+            prod_img_path = None
+            name_y = size[1] // 2 - 100
+    
+    if not prod_img_path or not os.path.exists(prod_img_path) if prod_img_path else True:
+        name_y = size[1] // 2 - 100
+    
     name = product_name if len(product_name) < 25 else product_name[:22] + "..."
     bbox = draw.textbbox((0, 0), name, font_size=100)
     nx = (size[0] - (bbox[2] - bbox[0])) // 2
@@ -189,21 +225,22 @@ def create_product_card(product_name, niche="general-health", size=(1920, 1080),
     for dx, dy in [(4, 4), (0, 0)]:
         c = Image.new("RGBA", size, (0, 0, 0, 0))
         cd = ImageDraw.Draw(c)
-        cd.text((nx + dx, size[1] // 2 - 100 + dy), name, fill=shadow if dx != 0 else "#FFFFFF", font_size=100)
+        cd.text((nx + dx, name_y + dy), name, fill=shadow if dx != 0 else "#FFFFFF", font_size=100)
         if dx == 0:
             bg = Image.alpha_composite(bg, c)
     
+    glow_bar_y = name_y + 100
     glow_bar = Image.new("RGBA", (min(600, len(name) * 18), 4), (r, g, b, 200))
     gx = (size[0] - glow_bar.width) // 2
-    bg.paste(glow_bar, (gx, size[1] // 2 - 20), glow_bar)
+    bg.paste(glow_bar, (gx, glow_bar_y), glow_bar)
     
     deco_line1 = Image.new("RGBA", size, (0, 0, 0, 0))
     d1 = ImageDraw.Draw(deco_line1)
-    d1.rectangle([(gx - 80, size[1] // 2 - 20), (gx - 20, size[1] // 2 - 16)], fill=(r, g, b, 150))
-    d1.rectangle([(gx + glow_bar.width + 20, size[1] // 2 - 20), (gx + glow_bar.width + 80, size[1] // 2 - 16)], fill=(r, g, b, 150))
+    d1.rectangle([(gx - 80, glow_bar_y - 2), (gx - 20, glow_bar_y + 2)], fill=(r, g, b, 150))
+    d1.rectangle([(gx + glow_bar.width + 20, glow_bar_y - 2), (gx + glow_bar.width + 80, glow_bar_y + 2)], fill=(r, g, b, 150))
     bg = Image.alpha_composite(bg, deco_line1)
     
-    dots_y = size[1] // 2 + 160
+    dots_y = glow_bar_y + 80
     for j in range(5):
         dx = size[0] // 2 - 120 + j * 60
         alpha = 255 if j == 2 else 80

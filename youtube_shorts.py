@@ -16,6 +16,12 @@ try:
 except:
     GEMINI_AVAILABLE = False
 
+try:
+    from product_image_fetcher import get_product_image
+    PRODUCT_IMAGES_AVAILABLE = True
+except:
+    PRODUCT_IMAGES_AVAILABLE = False
+
 SHORTS_SIZE = (1080, 1920)
 
 SHORTS_HOOKS = {
@@ -295,11 +301,37 @@ def create_shorts_intro(product_name, niche):
     bg = Image.alpha_composite(bg.convert("RGBA"), overlay)
     draw = ImageDraw.Draw(bg)
 
+    prod_img_path = None
+    if PRODUCT_IMAGES_AVAILABLE:
+        from product_image_fetcher import get_product_image
+        prod_img_path = get_product_image(product_name, "")
+
+    if prod_img_path and os.path.exists(prod_img_path):
+        try:
+            prod_img = Image.open(prod_img_path).convert("RGBA")
+            pw, ph = prod_img.size
+            scale = min(250 / pw, 250 / ph)
+            pw, ph = int(pw * scale), int(ph * scale)
+            prod_img = prod_img.resize((pw, ph), Image.LANCZOS)
+            shadow = Image.new("RGBA", (pw+16, ph+16), (0,0,0,80))
+            shadow = shadow.filter(ImageFilter.GaussianBlur(6))
+            sx = (SHORTS_SIZE[0] - shadow.width) // 2
+            sy = SHORTS_SIZE[1] // 2 - shadow.height // 2 - 40
+            bg.paste(shadow, (sx, sy), shadow)
+            px = (SHORTS_SIZE[0] - pw) // 2
+            py = SHORTS_SIZE[1] // 2 - ph // 2 - 40
+            bg.paste(prod_img, (px, py), prod_img)
+            name_start_y = SHORTS_SIZE[1] // 2 + 180
+        except:
+            name_start_y = SHORTS_SIZE[1] // 2 - 60
+    else:
+        name_start_y = SHORTS_SIZE[1] // 2 - 60
+
     short_name = product_name if len(product_name) < 25 else product_name[:22] + "..."
     lines = wrap_text(short_name, 80, SHORTS_SIZE[0] - 100)
     line_height = 90
     total_h = len(lines) * line_height
-    start_y = (SHORTS_SIZE[1] - total_h) // 2
+    start_y = name_start_y - total_h // 2
 
     for i, line in enumerate(lines):
         ly = start_y + i * line_height
