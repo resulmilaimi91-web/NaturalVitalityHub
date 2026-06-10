@@ -1,56 +1,77 @@
-name: VidFlow
+name: NaturalVitalityHub - YouTube Auto Publisher
+
 on:
   schedule:
-    - cron: "0 15 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       product:
-        description: Product name
+        description: 'Product name (leave empty for auto-pick)'
         required: false
         default: ''
         type: string
       privacy:
+        description: 'YouTube video privacy'
         type: choice
         default: public
         options: [unlisted, public, private]
+
 permissions:
   contents: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: pip install -q google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client gtts pillow moviepy requests
-      - run: pip install requests
-      - name: Fetch latest products from Digistore24 API
+
+      - name: Install dependencies
         run: |
-          if [ -n "${{ secrets.DIGISTORE24_API_KEY }}" ]; then
-            python scripts/fetch-digistore-products.py
-          fi
-        env:
-          DIGISTORE24_API_KEY: ${{ secrets.DIGISTORE24_API_KEY }}
-      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          pip install -q google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client gtts pillow moviepy requests google-genai
+
+      - name: Generate Gemini images for all niches (fallback to stock)
+        run: |
+          python -c "
+import sys, os
+sys.path.insert(0, '.')
+os.environ['GEMINI_API_KEY'] = '${{ secrets.GEMINI_API_KEY }}'
+from gemini_image_generator import generate_all_backgrounds
+generate_all_backgrounds()
+" 2>&1 || echo "Gemini images skipped (will use stock images)"
+
+      - name: Download stock images (fallback if Gemini fails)
+        run: |
           mkdir -p images
-          for url in \
-            https://images.unsplash.com/photo-1559757175-5700dde675bc?w=1920 \
-            https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1920 \
-            https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1920 \
-            https://images.unsplash.com/photo-1519823551278-64ac52734f5c?w=1920 \
-            https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1920; do
-            curl -sL "$url" -o "images/bg_$(basename $RANDOM).jpg" 2>/dev/null || true
-          done
-          ls images/ 2>/dev/null || echo "No images downloaded"
-      - run: echo "$CLIENT" | base64 --decode > client_secret.json 2>/dev/null || true
+          COUNT=$(ls images/*.jpg images/gemini_*.jpg 2>/dev/null | wc -l)
+          if [ "$COUNT" -lt 10 ]; then
+            for url in \
+              "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=1920" \
+              "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1920" \
+              "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1920" \
+              "https://images.unsplash.com/photo-1519823551278-64ac52734f5c?w=1920" \
+              "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1920"; do
+              curl -sL "$url" -o "images/bg_$(basename $RANDOM).jpg" 2>/dev/null || true
+            done
+          fi
+          echo "Total images: $(ls images/*.jpg 2>/dev/null | wc -l)"
+
+      - name: Restore YouTube auth
+        run: |
+          echo "$CLIENT" | base64 --decode > client_secret.json 2>/dev/null || echo "No client_secret"
+          echo "$TOKEN" | base64 --decode > token.pickle 2>/dev/null || echo "No token"
         env:
           CLIENT: ${{ secrets.CLIENT_SECRET_JSON }}
-      - run: echo "$TOKEN" | base64 --decode > token.pickle 2>/dev/null || true
-        env:
           TOKEN: ${{ secrets.TOKEN_PICKLE }}
-      - run: |
+
+      - name: Upload regular video to YouTube
+        run: |
           PROD="${{ github.event.inputs.product }}"
           PRIV="${{ github.event.inputs.privacy }}"
           if [ -z "$PROD" ]; then
@@ -58,18 +79,47 @@ jobs:
           else
             python youtube_content_automation.py generate-auto "$PROD" "${PRIV:-public}"
           fi
-      - name: Save published tracker
+
+      - name: Generate viral Short
         run: |
-          if [ -f "published_products.json" ] && [ -s "published_products.json" ]; then
-            git config user.name "NaturalVitalityHub Bot"
-            git config user.email "bot@naturalvitalityhub.com"
-            git add published_products.json
-            git diff --cached --quiet || git commit -m "update published tracker"
-            git push
-          fi
+          python -c "
+import json, sys
+sys.path.insert(0, '.')
+from youtube_content_automation import load_products, get_niche, get_next_unpublished
+from youtube_shorts import generate_shorts_video, SHORTS_DIR
+import os
+
+next_p = get_next_unpublished()
+if not next_p:
+    products = load_products()
+    next_p = products[0] if products else None
+
+if next_p:
+    name = next_p['produkti']
+    url = next_p['url_origjinale']
+    niche = get_niche(name)
+    print(f'[Shorts] Generating for: {name} ({niche})')
+    result = generate_shorts_video(name, niche, url)
+    print(f'[Shorts] Done: {result[\"title\"]}')
+    with open('output/last_short.json', 'w') as f:
+        json.dump(result, f)
+else:
+    print('[Shorts] No products found')
+"
+
+      - name: Save published tracker & token
+        run: |
+          git config user.name "NaturalVitalityHub Bot"
+          git config user.email "bot@naturalvitalityhub.com"
+          for f in published_products.json token.pickle client_secret.json; do
+            [ -f "$f" ] && [ -s "$f" ] && git add "$f" 2>/dev/null || true
+          done
+          git diff --cached --quiet || git commit -m "auto-publish $(date +%Y-%m-%d)"
+          git push 2>/dev/null || echo "Push skipped (no changes or permission)"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: out-${{ github.run_id }}
+          name: video-${{ github.run_id }}
           path: output/
           retention-days: 3

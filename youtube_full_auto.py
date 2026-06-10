@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-import json, os, sys, tempfile, random, glob
+import json, os, sys, tempfile, random, glob, math
 from pathlib import Path
 from gtts import gTTS
 from moviepy import *
@@ -9,12 +8,21 @@ BASE = Path(os.path.dirname(os.path.abspath(__file__)))
 IMAGES_DIR = BASE / "images"
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
+sys.path.insert(0, str(BASE))
+try:
+    from gemini_image_generator import get_image, find_local_gemini_image, NICHE_PROMPTS
+    GEMINI_AVAILABLE = True
+except:
+    GEMINI_AVAILABLE = False
+
 THEMES = [
-    {"accent": "#FFD700", "text": "#FFFFFF", "bar": "#FFD700", "fill": (0, 0, 0, 160)},
-    {"accent": "#00FFC8", "text": "#FFFFFF", "bar": "#00FFC8", "fill": (0, 0, 0, 150)},
-    {"accent": "#FFC800", "text": "#FFFFFF", "bar": "#FFC800", "fill": (0, 0, 0, 140)},
-    {"accent": "#64C8FF", "text": "#FFFFFF", "bar": "#64C8FF", "fill": (0, 0, 0, 155)},
-    {"accent": "#FF64FF", "text": "#FFFFFF", "bar": "#FF64FF", "fill": (0, 0, 0, 145)},
+    {"accent": "#FFD700", "text": "#FFFFFF", "bar": "#FFD700", "fill": (0, 0, 0, 120)},
+    {"accent": "#00FFC8", "text": "#FFFFFF", "bar": "#00FFC8", "fill": (0, 0, 0, 110)},
+    {"accent": "#FF4466", "text": "#FFFFFF", "bar": "#FF4466", "fill": (0, 0, 0, 115)},
+    {"accent": "#64C8FF", "text": "#FFFFFF", "bar": "#64C8FF", "fill": (0, 0, 0, 120)},
+    {"accent": "#FF64FF", "text": "#FFFFFF", "bar": "#FF64FF", "fill": (0, 0, 0, 110)},
+    {"accent": "#FF8844", "text": "#FFFFFF", "bar": "#FF8844", "fill": (0, 0, 0, 115)},
+    {"accent": "#44FF88", "text": "#FFFFFF", "bar": "#44FF88", "fill": (0, 0, 0, 110)},
 ]
 
 NICHE_COLORS = {
@@ -25,15 +33,20 @@ NICHE_COLORS = {
     "general-health": "#20B2AA", "minerals": "#87CEEB",
 }
 
-def create_default_bg(size=(1920, 1080)):
-    img = Image.new("RGB", size, (20, 30, 50))
+def create_gradient_bg(size=(1920, 1080), color1=(10, 15, 30), color2=(30, 45, 70)):
+    img = Image.new("RGB", size)
     draw = ImageDraw.Draw(img)
-    for i in range(30):
+    for y in range(size[1]):
+        r = int(color1[0] + (color2[0] - color1[0]) * y / size[1])
+        g = int(color1[1] + (color2[1] - color1[1]) * y / size[1])
+        b = int(color1[2] + (color2[2] - color1[2]) * y / size[1])
+        draw.line([(0, y), (size[0], y)], fill=(r, g, b))
+    for _ in range(20):
         x, y = random.randint(0, size[0]), random.randint(0, size[1])
-        r = random.randint(30, 100)
-        c = (random.randint(30, 80), random.randint(50, 120), random.randint(60, 130))
+        r = random.randint(20, 50)
+        c = (random.randint(25, 60), random.randint(40, 80), random.randint(50, 100))
         draw.ellipse([x-r, y-r, x+r, y+r], fill=c, outline=None)
-    return img.filter(ImageFilter.GaussianBlur(20))
+    return img.filter(ImageFilter.GaussianBlur(15))
 
 def get_background_images():
     exts = ("*.jpg", "*.jpeg", "*.png", "*.webp")
@@ -43,7 +56,19 @@ def get_background_images():
         files.extend(glob.glob(os.path.join(IMAGES_DIR, ext.upper())))
     return sorted(set(files))
 
-def load_bg_image(size=(1920, 1080)):
+def load_bg_image(size=(1920, 1080), niche="general-health"):
+    if GEMINI_AVAILABLE:
+        local = find_local_gemini_image(niche)
+        if local:
+            try:
+                bg = Image.open(local).convert("RGB")
+                return bg.resize(size, Image.LANCZOS)
+            except:
+                pass
+        prompt = NICHE_PROMPTS.get(niche, NICHE_PROMPTS["general-health"])
+        img = get_image(prompt, niche, "landscape" if size[0] > size[1] else "portrait")
+        if img:
+            return img.resize(size, Image.LANCZOS)
     images = get_background_images()
     if images:
         path = random.choice(images)
@@ -53,151 +78,264 @@ def load_bg_image(size=(1920, 1080)):
             return bg
         except:
             pass
-    return create_default_bg()
+    return create_gradient_bg(size)
 
-def extract_bullets(text, max_bullets=3):
-    sentences = [s.strip() for s in text.replace("!", ".").replace("?", ".").split(".") if len(s.strip()) > 10]
-    bullets = []
-    for s in sentences:
-        words = s.split()
-        short = " ".join(words[:6])
-        if short and len(short) > 15 and short not in bullets:
-            bullets.append(short)
-        if len(bullets) >= max_bullets:
-            break
-    if not bullets:
-        words = text.split()
-        for i in range(0, min(len(words), 12), 4):
-            chunk = " ".join(words[i:i+4])
-            if chunk:
-                bullets.append(chunk)
-    return bullets[:max_bullets]
+def create_glitch_overlay(size=(1920, 1080), intensity=0.15):
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for _ in range(int(size[1] * 0.08)):
+        y = random.randint(0, size[1])
+        h = random.randint(1, 3)
+        alpha = random.randint(20, 60)
+        draw.rectangle([(0, y), (size[0], y + h)], fill=(255, 255, 255, alpha))
+    for _ in range(6):
+        y = random.randint(0, size[1])
+        h = random.randint(1, 2)
+        alpha = random.randint(30, 80)
+        draw.rectangle([(0, y), (size[0], y + h)], fill=(255, 50, 50, alpha))
+    for _ in range(4):
+        y = random.randint(0, size[1])
+        h = random.randint(1, 2)
+        alpha = random.randint(30, 80)
+        draw.rectangle([(0, y), (size[0], y + h)], fill=(50, 100, 255, alpha))
+    return overlay
+
+def create_vignette(size=(1920, 1080)):
+    img = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    for i in range(400):
+        alpha = int(max(0, 200 - i * 0.5))
+        draw.ellipse([i, i, size[0]-i, size[1]-i], outline=(0, 0, 0, alpha), width=1)
+    return img.filter(ImageFilter.GaussianBlur(30))
+
+def create_scanline_overlay(size=(1920, 1080)):
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for y in range(0, size[1], 4):
+        draw.line([(0, y), (size[0], y)], fill=(0, 0, 0, 15))
+    return overlay
+
+def create_gradient_overlay(size=(1920, 1080), accent_color=(255, 215, 0)):
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for y in range(size[1]):
+        alpha = int(80 * (1 - y / size[1]) * (y / size[1]) * 4)
+        draw.line([(0, y), (size[0], y)], fill=(accent_color[0], accent_color[1], accent_color[2], min(alpha, 60)))
+    return overlay
+
+def create_corner_accent(size=(1920, 1080), accent_color=(255, 215, 0)):
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for i in range(3, 8):
+        w = i * 2
+        draw.rectangle([(size[0] - w - 20, 20), (size[0] - 20, 20 + w)], fill=(*accent_color, 180))
+    for i in range(3, 8):
+        w = i * 2
+        draw.rectangle([(20, 20), (20 + w, 20 + w)], fill=(*accent_color, 120))
+    return overlay
+
+def create_side_accent(size=(1920, 1080), accent_color=(255, 215, 0)):
+    accent = Image.new("RGBA", (8, size[1]), (*accent_color, 200))
+    base = Image.new("RGBA", size, (0, 0, 0, 0))
+    base.paste(accent, (0, 0), accent)
+    return base
+
+def create_geometric_deco(size=(1920, 1080), accent_color=(255, 215, 0)):
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for _ in range(3):
+        x = random.randint(50, size[0] - 100)
+        y = random.randint(50, size[1] - 100)
+        vertices = []
+        cx, cy = x, y
+        r = random.randint(30, 80)
+        for i in range(6):
+            angle = i * 60 + random.randint(-15, 15)
+            rad = math.radians(angle)
+            vertices.append((cx + r * math.cos(rad), cy + r * math.sin(rad)))
+        draw.polygon(vertices, outline=(*accent_color, random.randint(40, 80)), width=2)
+    return overlay
 
 def create_product_card(product_name, niche="general-health", size=(1920, 1080), affiliate_url=""):
     color = NICHE_COLORS.get(niche, "#20B2AA")
     r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
-    bg = Image.new("RGB", size, (15, 20, 35))
-    draw = ImageDraw.Draw(bg)
-    for i in range(40):
-        x, y = random.randint(0, size[0]), random.randint(0, size[1])
-        rad = random.randint(15, 80)
-        cr = random.randint(25, 60)
-        cg = random.randint(35, 90)
-        cb = random.randint(45, 100)
-        draw.ellipse([x-rad, y-rad, x+rad, y+rad], fill=(cr, cg, cb))
-    bg = bg.filter(ImageFilter.GaussianBlur(25))
-    draw = ImageDraw.Draw(bg)
-    overlay = Image.new("RGBA", size, (0, 0, 0, 120))
+    
+    bg = load_bg_image(size, niche=niche)
+    bg = bg.filter(ImageFilter.GaussianBlur(4))
+    
+    overlay = Image.new("RGBA", size, (0, 0, 0, 130))
     bg = Image.alpha_composite(bg.convert("RGBA"), overlay).convert("RGB")
+    
+    gradient = create_gradient_overlay(size, (r, g, b))
+    bg = Image.alpha_composite(bg.convert("RGBA"), gradient).convert("RGB")
+    
+    side = create_side_accent(size, (r, g, b))
+    bg = Image.alpha_composite(bg.convert("RGBA"), side).convert("RGB")
+    
+    deco = create_geometric_deco(size, (r, g, b))
+    bg = Image.alpha_composite(bg.convert("RGBA"), deco).convert("RGB")
+    
+    glitch = create_glitch_overlay(size, 0.1)
+    bg = Image.alpha_composite(bg.convert("RGBA"), glitch)
+    
+    vignette = create_vignette(size)
+    bg = Image.alpha_composite(bg, vignette)
+    
     draw = ImageDraw.Draw(bg)
-
-    accent_line = Image.new("RGBA", (6, size[1]), (r, g, b, 200))
-    bg.paste(accent_line, (0, 0), accent_line)
-
-    box_w, box_h = 800, 400
-    box_x, box_y = (size[0] - box_w) // 2, (size[1] - box_h) // 2 - 60
-    box_overlay = Image.new("RGBA", (box_w, box_h), (r, g, b, 40))
-    bg.paste(box_overlay, (box_x, box_y), box_overlay)
-    draw.rectangle([box_x, box_y, box_x + box_w, box_y + box_h], outline=color, width=3)
-
+    
     name = product_name if len(product_name) < 25 else product_name[:22] + "..."
-    bbox = draw.textbbox((0, 0), name, font_size=90)
+    bbox = draw.textbbox((0, 0), name, font_size=100)
     nx = (size[0] - (bbox[2] - bbox[0])) // 2
-    draw.text((nx + 3, box_y + 55 + 3), name, fill=(0, 0, 0, 200), font_size=90)
-    draw.text((nx, box_y + 55), name, fill="#FFFFFF", font_size=90)
-
-    niche_label = niche.replace("-", " ").title()
-    bbox = draw.textbbox((0, 0), niche_label, font_size=36)
-    nnx = (size[0] - (bbox[2] - bbox[0])) // 2
-    draw.text((nnx, box_y + 180), niche_label, fill=color, font_size=36)
-
-    badge = "OFFICIAL WEBSITE"
-    bbox = draw.textbbox((0, 0), badge, font_size=32)
-    bx = (size[0] - (bbox[2] - bbox[0])) // 2
-    badge_pad = 20
-    badge_w = (bbox[2] - bbox[0]) + badge_pad * 2
-    badge_h = (bbox[3] - bbox[1]) + badge_pad * 2
-    badge_x = bx - badge_pad
-    badge_y = box_y + 240
-    draw.rounded_rectangle([badge_x, badge_y, badge_x + badge_w, badge_y + badge_h], radius=8, fill=color)
-    draw.text((bx, badge_y + 8), badge, fill="#000000", font_size=32)
-
-    dots_y = box_y + box_h + 40
+    shadow = (0, 0, 0, 160)
+    for dx, dy in [(4, 4), (0, 0)]:
+        c = Image.new("RGBA", size, (0, 0, 0, 0))
+        cd = ImageDraw.Draw(c)
+        cd.text((nx + dx, size[1] // 2 - 100 + dy), name, fill=shadow if dx != 0 else "#FFFFFF", font_size=100)
+        if dx == 0:
+            bg = Image.alpha_composite(bg, c)
+    
+    glow_bar = Image.new("RGBA", (min(600, len(name) * 18), 4), (r, g, b, 200))
+    gx = (size[0] - glow_bar.width) // 2
+    bg.paste(glow_bar, (gx, size[1] // 2 - 20), glow_bar)
+    
+    deco_line1 = Image.new("RGBA", size, (0, 0, 0, 0))
+    d1 = ImageDraw.Draw(deco_line1)
+    d1.rectangle([(gx - 80, size[1] // 2 - 20), (gx - 20, size[1] // 2 - 16)], fill=(r, g, b, 150))
+    d1.rectangle([(gx + glow_bar.width + 20, size[1] // 2 - 20), (gx + glow_bar.width + 80, size[1] // 2 - 16)], fill=(r, g, b, 150))
+    bg = Image.alpha_composite(bg, deco_line1)
+    
+    dots_y = size[1] // 2 + 160
     for j in range(5):
         dx = size[0] // 2 - 120 + j * 60
-        draw.ellipse([dx, dots_y, dx + 20, dots_y + 20], fill=color)
-
-    if affiliate_url:
-        short_url = affiliate_url[:55] + "..." if len(affiliate_url) > 55 else affiliate_url
-        bbox = draw.textbbox((0, 0), short_url, font_size=32)
-        ux = (size[0] - (bbox[2] - bbox[0])) // 2
-        draw.text((ux + 2, dots_y + 60 + 2), short_url, fill=(0, 0, 0, 200), font_size=32)
-        draw.text((ux, dots_y + 60), short_url, fill=color, font_size=32)
-
+        alpha = 255 if j == 2 else 80
+        dot = Image.new("RGBA", (12, 12), (r, g, b, alpha))
+        bg.paste(dot, (dx, dots_y), dot)
+    
+    scanlines = create_scanline_overlay(size)
+    bg = Image.alpha_composite(bg, scanlines)
+    
+    corner = create_corner_accent(size, (r, g, b))
+    bg = Image.alpha_composite(bg, corner)
+    
     path = os.path.join(tempfile.gettempdir(), f"product_card_{random.randint(0,999999)}.png")
     bg.save(path)
     return path
 
-def wrap_text(text, max_chars=22):
-    words = text.split()
-    lines, current = [], ""
-    for w in words:
-        if len(current + " " + w) <= max_chars:
-            current += " " + w if current else w
-        else:
-            lines.append(current)
-            current = w
-    if current: lines.append(current)
-    return lines
-
-def create_slide(text, theme=None, duration=5, size=(1920, 1080), product_card_path=None, affiliate_url=""):
+def create_slide(text="", theme=None, duration=5, size=(1920, 1080), product_card_path=None, affiliate_url="", niche="general-health"):
     if theme is None:
         theme = random.choice(THEMES)
-    img = load_bg_image(size)
+    r, g, b = int(theme["accent"][1:3], 16), int(theme["accent"][3:5], 16), int(theme["accent"][5:7], 16)
+    
+    img = load_bg_image(size, niche=niche)
+    img = img.filter(ImageFilter.GaussianBlur(3))
+    
     overlay = Image.new("RGBA", size, theme["fill"])
     img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    
+    gradient = create_gradient_overlay(size, (r, g, b))
+    img = Image.alpha_composite(img.convert("RGBA"), gradient).convert("RGB")
+    
+    side = create_side_accent(size, (r, g, b))
+    img = Image.alpha_composite(img.convert("RGBA"), side).convert("RGB")
+    
+    deco = create_geometric_deco(size, (r, g, b))
+    img = Image.alpha_composite(img.convert("RGBA"), deco).convert("RGB")
+    
+    glitch = create_glitch_overlay(size, 0.12)
+    img = Image.alpha_composite(img.convert("RGBA"), glitch)
+    
+    vignette = create_vignette(size)
+    img = Image.alpha_composite(img, vignette)
+    
+    scanlines = create_scanline_overlay(size)
+    img = Image.alpha_composite(img, scanlines)
+    
     draw = ImageDraw.Draw(img)
-
-    bullets = extract_bullets(text, 3)
-    if not bullets:
-        bullets = ["Learn more about", "this product", "in the description"]
-
-    marker = " ▸ "
-    bullet_texts = [marker + b for b in bullets]
-    font_big = 72
-    font_small = 48
-    line_h = 110
-    start_y = (size[1] - len(bullet_texts) * line_h) // 2 - 40
-
-    for i, bt in enumerate(bullet_texts):
-        y = start_y + i * line_h
-        draw.text((130, y + 3), bt, fill=(0, 0, 0, 200), font_size=font_big)
-        draw.text((130, y), bt, fill=theme["text"], font_size=font_big)
-
+    
+    accent_glow = Image.new("RGBA", (400, 3), (r, g, b, 200))
+    img.paste(accent_glow, (size[0] // 2 - 200, 80), accent_glow)
+    accent_glow2 = Image.new("RGBA", (400, 3), (r, g, b, 200))
+    img.paste(accent_glow2, (size[0] // 2 - 200, size[1] - 100), accent_glow2)
+    
+    label = "PRODUCT SPOTLIGHT"
+    bbox = draw.textbbox((0, 0), label, font_size=28)
+    lx = (size[0] - (bbox[2] - bbox[0])) // 2
+    lb = Image.new("RGBA", size, (0, 0, 0, 0))
+    ld = ImageDraw.Draw(lb)
+    ld.text((lx, 110), label, fill=(r, g, b, 180), font_size=28)
+    img = Image.alpha_composite(img, lb)
+    
     if product_card_path and os.path.exists(product_card_path):
         try:
             card = Image.open(product_card_path).convert("RGBA")
-            card = card.resize((220, 220), Image.LANCZOS)
-            cx, cy = size[0] - 270, size[1] - 270
-            img.paste(card, (cx, cy), card)
+            preview_size = card.copy()
+            preview_size.thumbnail((500, 500), Image.LANCZOS)
+            pw, ph = preview_size.size
+            pcx = (size[0] - pw) // 2
+            pcy = (size[1] - ph) // 2 + 40
+            overlay_card = Image.new("RGBA", size, (0, 0, 0, 0))
+            overlay_card.paste(preview_size, (pcx, pcy), preview_size)
+            img = Image.alpha_composite(img, overlay_card)
         except:
             pass
+    
+    path = os.path.join(tempfile.gettempdir(), f"slide_{random.randint(0,999999)}.png")
+    img.save(path)
+    return path
 
-    if affiliate_url:
-        short_url = affiliate_url[:55] + "..." if len(affiliate_url) > 55 else affiliate_url
-        bbox = draw.textbbox((0, 0), short_url, font_size=24)
-        lx = (size[0] - (bbox[2] - bbox[0])) // 2
-        draw.text((lx, size[1] - 50), short_url, fill=theme["text"], font_size=24)
-
-    slide_path = os.path.join(tempfile.gettempdir(), f"slide_{random.randint(0,999999)}.png")
-    img.save(slide_path)
-    return slide_path
+def create_ending_card(product_name, niche="general-health", size=(1920, 1080), affiliate_url=""):
+    color = NICHE_COLORS.get(niche, "#20B2AA")
+    r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
+    
+    img = load_bg_image(size, niche=niche)
+    img = img.filter(ImageFilter.GaussianBlur(6))
+    overlay = Image.new("RGBA", size, (0, 0, 0, 140))
+    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    
+    gradient = create_gradient_overlay(size, (r, g, b))
+    img = Image.alpha_composite(img.convert("RGBA"), gradient).convert("RGB")
+    
+    glitch = create_glitch_overlay(size, 0.08)
+    img = Image.alpha_composite(img.convert("RGBA"), glitch)
+    
+    vignette = create_vignette(size)
+    img = Image.alpha_composite(img, vignette)
+    
+    draw = ImageDraw.Draw(img)
+    
+    cta = "CHECK OFFICIAL LINK"
+    bbox = draw.textbbox((0, 0), cta, font_size=72)
+    cx = (size[0] - (bbox[2] - bbox[0])) // 2
+    for dx, dy in [(3, 3), (0, 0)]:
+        c = Image.new("RGBA", size, (0, 0, 0, 0))
+        cd = ImageDraw.Draw(c)
+        cd.text((cx + dx, size[1] // 2 - 80 + dy), cta, fill=(0, 0, 0, 200) if dx != 0 else color, font_size=72)
+        if dx == 0:
+            img = Image.alpha_composite(img, c)
+    
+    sub = "Link in Description"
+    bbox = draw.textbbox((0, 0), sub, font_size=36)
+    sx = (size[0] - (bbox[2] - bbox[0])) // 2
+    img_c = Image.new("RGBA", size, (0, 0, 0, 0))
+    sd = ImageDraw.Draw(img_c)
+    sd.text((sx, size[1] // 2 + 30), sub, fill=(255, 255, 255, 180), font_size=36)
+    img = Image.alpha_composite(img, img_c)
+    
+    side = create_side_accent(size, (r, g, b))
+    img = Image.alpha_composite(img, side)
+    
+    path = os.path.join(tempfile.gettempdir(), f"ending_{random.randint(0,999999)}.png")
+    img.save(path)
+    return path
 
 def text_to_speech(text, lang="en", slow=False):
     tts = gTTS(text=text, lang=lang, slow=slow)
     path = os.path.join(tempfile.gettempdir(), "narration.mp3")
     tts.save(path)
     return path
+
+def crossfade_transition(clip1, clip2, duration=0.5):
+    return CompositeVideoClip([clip1, clip2.with_start(clip1.duration - duration).with_duration(duration).crossfadein(duration)])
 
 def create_video_from_script(title="Video Title", script_sections=None, desc="", hashtags="", output_dir=None, lang="en", product_name="", niche="general-health", affiliate_url=""):
     if script_sections is None:
@@ -215,21 +353,24 @@ def create_video_from_script(title="Video Title", script_sections=None, desc="",
     total_duration = audio_clip.duration
 
     print(f"Creating slides... ({total_duration:.1f}s audio)")
-    clips = []
     n_sections = len(script_sections)
     sec_per_section = total_duration / n_sections if n_sections > 0 else total_duration
 
-    product_card_clip = ImageClip(product_card_path, duration=sec_per_section * 1.5)
-    clips.append(product_card_clip)
+    clips = []
+    
+    intro_path = create_product_card(product_name or title, niche, affiliate_url=affiliate_url)
+    intro_clip = ImageClip(intro_path, duration=sec_per_section * 0.8)
+    clips.append(intro_clip)
 
     for i, section in enumerate(script_sections):
         theme = THEMES[i % len(THEMES)]
-        slide_path = create_slide(section["text"], theme=theme, duration=sec_per_section, product_card_path=product_card_path, affiliate_url=affiliate_url)
+        slide_path = create_slide(section["text"], theme=theme, duration=sec_per_section, product_card_path=product_card_path, affiliate_url=affiliate_url, niche=niche)
         clip = ImageClip(slide_path, duration=sec_per_section)
         clips.append(clip)
 
-    product_card_end = ImageClip(product_card_path, duration=sec_per_section)
-    clips.append(product_card_end)
+    ending_path = create_ending_card(product_name or title, niche, affiliate_url=affiliate_url)
+    ending_clip = ImageClip(ending_path, duration=sec_per_section * 0.8)
+    clips.append(ending_clip)
 
     video = concatenate_videoclips(clips, method="compose")
     total_video_duration = video.duration
@@ -246,7 +387,7 @@ def create_video_from_script(title="Video Title", script_sections=None, desc="",
     return output_path
 
 if __name__ == "__main__":
-    print("YouTube Professional Video Creator")
+    print("YouTube Professional Video Creator v2")
     print("=" * 40)
     title = input("Video Title: ")
     print("Enter script (sections separated by '---' on a new line). Press Enter then Ctrl+Z+Enter to finish:")
