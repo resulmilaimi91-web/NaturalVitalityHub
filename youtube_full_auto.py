@@ -10,7 +10,7 @@ os.makedirs(IMAGES_DIR, exist_ok=True)
 
 sys.path.insert(0, str(BASE))
 try:
-    from gemini_image_generator import get_bg_image, find_niche_image, NICHE_PALETTES
+    from gemini_image_generator import find_bg_image, create_procedural_bg
     GEMINI_AVAILABLE = True
 except:
     GEMINI_AVAILABLE = False
@@ -64,16 +64,17 @@ def get_background_images():
 
 def load_bg_image(size=(1920, 1080), niche="general-health"):
     if GEMINI_AVAILABLE:
-        local = find_niche_image(niche)
-        if local:
+        path = find_bg_image(niche, "landscape" if size[0] > size[1] else "portrait")
+        if not path:
+            img = create_procedural_bg(size, niche)
+            if img:
+                return img.resize(size, Image.LANCZOS)
+        else:
             try:
-                bg = Image.open(local).convert("RGB")
+                bg = Image.open(path).convert("RGB")
                 return bg.resize(size, Image.LANCZOS)
             except:
                 pass
-        img = get_bg_image(size, niche)
-        if img:
-            return img.resize(size, Image.LANCZOS)
     images = get_background_images()
     if images:
         path = random.choice(images)
