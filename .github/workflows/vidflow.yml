@@ -41,10 +41,11 @@ jobs:
           python -c "
 import sys, os
 sys.path.insert(0, '.')
-os.environ['GEMINI_API_KEY'] = '${{ secrets.GEMINI_API_KEY }}'
 from gemini_image_generator import generate_all_backgrounds
 generate_all_backgrounds()
 " 2>&1 || echo "Gemini images skipped (will use stock images)"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Download stock images (fallback if Gemini fails)
         run: |
@@ -79,6 +80,8 @@ generate_all_backgrounds()
           else
             python youtube_content_automation.py generate-auto "$PROD" "${PRIV:-public}"
           fi
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Generate viral Short
         run: |
@@ -106,6 +109,8 @@ if next_p:
 else:
     print('[Shorts] No products found')
 "
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Save published tracker & token
         run: |
