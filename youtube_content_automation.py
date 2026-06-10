@@ -449,8 +449,17 @@ SCRIPTS = {
     },
 }
 
+def ensure_product_images():
+    try:
+        from product_image_fetcher import ensure_product_image_for_all
+        products = load_products()
+        got = ensure_product_image_for_all(products)
+        print(f"  [i] Product images: {got}/{len(products)}")
+    except Exception as e:
+        print(f"  [i] Product image fetch skipped: {e}")
+
 def generate_all_packages():
-    products = load_products()
+    ensure_product_images()
     if not products:
         print("[X] No products found in tracking.json")
         return []
@@ -612,6 +621,7 @@ def cmd_generate_all():
     print("=" * 60)
 
 def cmd_generate_single(product_name=None, auto_yes=False, auto_privacy="unlisted"):
+    ensure_product_images()
     if not product_name:
         product_name = input("Product name to generate: ").strip()
     
