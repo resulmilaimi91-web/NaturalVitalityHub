@@ -66,6 +66,37 @@ PRODUCT_NICHES = {
     "Magnesium Glycinate": "minerals",
     "Joint Ease": "joint-health",
     "Probiotic 40 Billion": "gut-health",
+    "Primal UltraBurst": "energy",
+    "Primal X8": "energy",
+    "Advanced Amino": "general-health",
+    "Advanced Mitochondrial": "energy",
+    "Advanced Collagen": "beauty",
+    "Integrative Digestive": "gut-health",
+    "Advanced Prostate": "men-health",
+    "Prime Perform": "men-health",
+    "EndoPeak": "men-health",
+    "Audifort": "brain-health",
+    "CelluCare": "blood-sugar",
+    "Nitric Boost": "men-health",
+    "Keto After 50": "weight-loss",
+    "Patriot Slim Shot": "weight-loss",
+    "Advanced Memory Formula": "brain-health",
+    "Encyclopedia of Power Foods": "general-health",
+    "GlucoTonic": "blood-sugar",
+    "Sight Fresh": "eye-health",
+    "Pep-Tonic": "beauty",
+    "ZenCortex": "brain-health",
+    "The Smoothie Diet": "weight-loss",
+    "Advanced Muscle Plus": "men-health",
+    "CogniCare Pro": "brain-health",
+    "iGenics": "eye-health",
+    "Blood Sugar Blaster": "blood-sugar",
+    "Pineal Guardian": "brain-health",
+    "Primal Grow Pro 24": "men-health",
+    "Advanced Mitochondrial Formula": "energy",
+    "Nitric Boost": "men-health",
+    "Advanced Prostate Formula": "men-health",
+    "Advanced Amino Muscle Mass": "fitness",
 }
 
 def load_products():
@@ -82,6 +113,87 @@ def get_niche(product_name):
             return niche
     return "general-health"
 
+def generate_description(product_name, niche, affiliate_url, script):
+    sections = script.split("\n\n")
+    hook = ""
+    benefits = []
+    for s in sections:
+        if s.startswith("[HOOK]"):
+            hook = s.replace("[HOOK]", "").strip()
+        elif s.startswith("[BENEFITS]"):
+            ben_text = s.replace("[BENEFITS]", "").strip()
+            benefits = [b.strip() for b in ben_text.split(",") if b.strip()]
+    
+    niche_icons = {
+        "dental-health": "🦷", "blood-sugar": "🩸", "men-health": "💪",
+        "sleep-health": "😴", "gut-health": "🦠", "weight-loss": "⚖️",
+        "brain-health": "🧠", "eye-health": "👁️", "stress-relief": "🧘",
+        "detox": "🌿", "joint-health": "🦴", "energy": "⚡",
+        "beauty": "✨", "general-health": "💚", "minerals": "💊",
+    }
+    icon = niche_icons.get(niche, "💚")
+    
+    product_tag = product_name.replace(' ', '').replace('-', '').replace('.', '')
+    
+    hashtags = [
+        f"#NaturalVitalityHub",
+        f"#{product_tag}",
+        f"#{product_tag}Review",
+        f"#{product_tag}Results",
+        f"#SupplementReview2026",
+        f"#NaturalHealth",
+        f"#WellnessJourney",
+        f"#{niche.replace('-', '')}",
+        f"#NaturalSupplements",
+        f"#HealthSupplements",
+        f"#SupplementsThatWork",
+        f"#HonestReview",
+        f"#DoesItWork",
+        f"#2026Health",
+        f"#WellnessTips",
+        f"#Biohacking",
+        f"#NaturalRemedies",
+        f"#HealthOptimization",
+    ]
+    
+    desc = f"""{hook}
+
+{icon} WHY {product_name.upper()}?
+"""
+    for b in benefits[:5]:
+        desc += f"✅ {b}\n"
+    
+    desc += f"""
+
+🔥 GET {product_name.upper()} AT BEST PRICE:
+👉 {affiliate_url}
+
+🎯 LIMITED TIME OFFER - Click the link above to claim your discount!
+
+⚠️ DISCLAIMER: Results may vary. This video is for informational purposes only. 
+Consult your healthcare provider before starting any supplement.
+
+{' '.join(hashtags)}
+
+🔔 SUBSCRIBE for more honest reviews!
+▶️ https://www.youtube.com/@NaturalVitalityHub-y4d
+
+---
+💡 AFFILIATE DISCLOSURE: This description contains affiliate links. 
+If you purchase through these links, I may earn a commission at no extra cost to you.
+This helps support the channel and allows me to create more content like this.
+
+📌 TIMESTAMPS:
+0:00 - Introduction
+1:30 - The Problem
+3:00 - The Solution
+4:30 - Key Ingredients
+6:00 - Benefits & Results
+7:30 - Final Verdict
+"""
+    return desc
+
+
 def generate_youtube_package(product):
     name = product["produkti"]
     url = product["url_origjinale"]
@@ -89,14 +201,39 @@ def generate_youtube_package(product):
     content = SCRIPTS.get(niche, SCRIPTS["general-health"])
     
     title = content["title_template"].replace("{product}", name)
-    script = "\n\n".join(content["sections"])
-    description = url
+    script = "\n\n".join([s.replace("{product}", name) for s in content["sections"]])
+    description = generate_description(name, niche, url, script)
+    tags_raw = content.get("tags", "")
+    
+    try:
+        from gemini_script_generator import generate_script, generate_viral_elements
+        print(f"  [i] Generating AI script for {name}...")
+        ai_sections = generate_script(name, niche, url)
+        if ai_sections and len(ai_sections) >= 6:
+            script = "\n\n".join(ai_sections)
+            print(f"  [OK] AI script generated ({sum(len(s.split()) for s in ai_sections)} words)")
+            
+            viral = generate_viral_elements(name, niche, url)
+            if viral:
+                if viral.get("title"):
+                    title = viral["title"]
+                if viral.get("hashtags"):
+                    tags_raw = " ".join(viral["hashtags"])
+                    
+        from gemini_script_generator import generate_rich_description
+        ai_desc = generate_rich_description(name, niche, url, script)
+        if ai_desc:
+            description = ai_desc
+    except Exception as e:
+        print(f"  [i] AI generation skipped ({e}), using templates")
     
     tags = [
-        name, f"{name} Review", f"{name} 2026",
-        "Health Supplements", "Natural Health",
-        "Supplement Review", "Wellness",
-        content.get("tags", "")
+        name, f"{name} Review", f"{name} 2026", f"{name} Results",
+        "Health Supplements", "Natural Health", "Supplement Review", "Wellness",
+        "Natural Supplements", "Health 2026", "Best Supplements",
+        "Supplement Results", "Honest Review", "Does It Work",
+        niche.replace("-", " ").title(), niche.replace("-", ""),
+        tags_raw
     ]
     
     thumbnail_prompt = content["thumbnail_prompt"].replace("{product}", name)
